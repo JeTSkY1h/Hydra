@@ -10,11 +10,11 @@ type Role = 'ADMIN' | 'MEMBER'
 type AuthContextType = {
   token: string | null
   userId: string | null
+  userName: string | null
   role: Role | null
   vaultKey: Uint8Array | null
-  login: (token: string, encryptedVaultKey: string, kdfSalt: string, vaultKey: Uint8Array, role: Role, userId: string) => void
+  login: (token: string, encryptedVaultKey: string, kdfSalt: string, vaultKey: Uint8Array, role: Role, userId: string, userName: string) => void
   logout: () => void
-  // Nach einem Seiten-Reload muss der Vault Key neu entschlüsselt werden
   unlockVaultKey: (password: string) => Promise<void>
 }
 
@@ -27,22 +27,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userId, setUserId] = useState<string | null>(
     () => localStorage.getItem('hydra_user_id')
   )
+  const [userName, setUserName] = useState<string | null>(
+    () => localStorage.getItem('hydra_user_name')
+  )
   const [role, setRole] = useState<Role | null>(
     () => localStorage.getItem('hydra_role') as Role | null
   )
-  // Vault Key liegt nur im Memory — verschwindet bei Reload
   const [vaultKey, setVaultKey] = useState<Uint8Array | null>(null)
 
-  function login(token: string, encryptedVaultKey: string, kdfSalt: string, vaultKey: Uint8Array, role: Role, userId: string) {
+  function login(token: string, encryptedVaultKey: string, kdfSalt: string, vaultKey: Uint8Array, role: Role, userId: string, userName: string) {
     localStorage.setItem('hydra_token', token)
     localStorage.setItem('hydra_evk', encryptedVaultKey)
     localStorage.setItem('hydra_kdf_salt', kdfSalt)
     localStorage.setItem('hydra_role', role)
     localStorage.setItem('hydra_user_id', userId)
+    localStorage.setItem('hydra_user_name', userName)
     setToken(token)
     setVaultKey(vaultKey)
     setRole(role)
     setUserId(userId)
+    setUserName(userName)
   }
 
   function logout() {
@@ -51,14 +55,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('hydra_kdf_salt')
     localStorage.removeItem('hydra_role')
     localStorage.removeItem('hydra_user_id')
+    localStorage.removeItem('hydra_user_name')
     setToken(null)
     setVaultKey(null)
     setRole(null)
     setUserId(null)
+    setUserName(null)
   }
 
-  // Wird nach einem Seiten-Reload aufgerufen — User gibt Passwort ein,
-  // Vault Key wird aus localStorage-Daten + Passwort wieder entschlüsselt
   async function unlockVaultKey(password: string) {
     const encryptedVaultKey = localStorage.getItem('hydra_evk')
     const kdfSalt = localStorage.getItem('hydra_kdf_salt')
@@ -71,7 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ token, userId, role, vaultKey, login, logout, unlockVaultKey }}>
+    <AuthContext.Provider value={{ token, userId, userName, role, vaultKey, login, logout, unlockVaultKey }}>
       {children}
     </AuthContext.Provider>
   )

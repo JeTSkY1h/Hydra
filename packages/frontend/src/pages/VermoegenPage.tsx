@@ -97,7 +97,7 @@ export default function VermoegenPage() {
       )}
 
       {data.assets.length > 0 && (
-        <Box bg="white" rounded="lg" shadow="sm">
+        <Box bg="white" rounded="lg" shadow="sm" overflowX="auto">
           <Table.Root>
             <Table.Header>
               <Table.Row>

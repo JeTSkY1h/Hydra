@@ -67,7 +67,7 @@ export default function RegisterPage() {
         userId: string
       }>('/auth/login', { name, password })
 
-      login(token, evk, salt, vaultKey, role, userId)
+      login(token, evk, salt, vaultKey, role, userId, name)
       navigate('/')
     } catch (e: any) {
       setError(e.message)
