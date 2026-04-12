@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+model User {
+  id                String   @id @default(cuid())
+  name              String   @unique
+  passwordHash      String
+  kdfSalt           String   // Salt für Key-Ableitung aus Passwort (nicht geheim)
+  publicKey         String   // Öffentlicher Schlüssel des Users
+  encryptedVaultKey String   // Vault Key, verschlüsselt mit dem Public Key des Users
+  role              Role     @default(MEMBER)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  invitesSent       Invite[] @relation("InviteCreatedBy")
+}
+
+model Invite {
+  id                String    @id @default(cuid())
+  token             String    @unique
+  encryptedVaultKey String    // Vault Key, verschlüsselt mit dem Invite-Token
+  createdBy         User      @relation("InviteCreatedBy", fields: [createdById], references: [id])
+  createdById       String
+  usedAt            DateTime?
+  expiresAt         DateTime
+  createdAt         DateTime  @default(now())
+}
+
+// ─── App-Daten (Zero-Knowledge) ───────────────────────────────────────────────
+// Alle Felder ausser id und Timestamps sind clientseitig verschlüsselt.
+// Der Server weiss nicht was in encryptedData steht.
+
+model Category {
+  id            String    @id @default(cuid())
+  encryptedData String    // { name: string }
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Product {
+  id            String   @id @default(cuid())
+  encryptedData String   // { name, quantity, buyPrice?, categoryId }
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Transaction {
+  id            String   @id @default(cuid())
+  encryptedData String   // { date, type, description, quantity?, amountCents, productId? }
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model MonthlyCash {
+  id            String   @id @default(cuid())
+  encryptedData String   // { month, year, cashStartCents }
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Asset {
+  id            String   @id @default(cuid())
+  encryptedData String   // { name, valueCents }
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Credit {
+  id            String   @id @default(cuid())
+  encryptedData String   // { personName, startAmountCents }
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model CreditPayment {
+  id            String   @id @default(cuid())
+  encryptedData String   // { creditId, date, amountCents }
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model AppSettings {
+  id            String   @id @default(cuid())
+  encryptedData String   // { memberCount }
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}

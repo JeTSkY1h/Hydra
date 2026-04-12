@@ -1,0 +1,15 @@
+{
+  "name": "hydra",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --parallel --filter './packages/*' dev",
+    "build": "pnpm --filter './packages/*' build",
+    "typecheck": "pnpm --filter './packages/*' typecheck"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild", "@prisma/engines", "prisma", "argon2"]
+  }
+}
