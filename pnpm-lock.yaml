@@ -41,13 +41,13 @@ importers:
       jose:
         specifier: ^6.2.2
         version: 6.2.2
+      prisma:
+        specifier: ^7.7.0
+        version: 7.7.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(typescript@5.9.3)
     devDependencies:
       '@types/node':
         specifier: ^22.14.0
         version: 22.19.17
-      prisma:
-        specifier: ^7.7.0
-        version: 7.7.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(typescript@5.9.3)
       tsx:
         specifier: ^4.19.3
         version: 4.21.0
