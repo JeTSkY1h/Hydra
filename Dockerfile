@@ -22,7 +22,6 @@ RUN pnpm --filter @hydra/backend build
 # ── Stage 2: Runtime ───────────────────────────────────────────────────────────
 FROM node:24-alpine AS runner
 WORKDIR /app
-
 RUN corepack enable
 
 # Nur das nötigste für den Runtime
@@ -32,14 +31,16 @@ COPY packages/backend/package.json ./packages/backend/
 
 RUN pnpm install --frozen-lockfile --prod
 
+# Prisma Schema + Config (für migrate deploy UND generate)
+COPY packages/backend/prisma         ./packages/backend/prisma
+COPY packages/backend/prisma.config.ts ./packages/backend/
+
+# Prisma Client im Runtime-Stage generieren
+RUN pnpm --filter @hydra/backend exec prisma generate
+
 # Gebaute Artefakte aus Stage 1
 COPY --from=builder /app/packages/shared/src   ./packages/shared/src
 COPY --from=builder /app/packages/backend/dist ./packages/backend/dist
-COPY --from=builder /app/packages/backend/src/generated ./packages/backend/src/generated
-
-# Prisma Schema + Migrations für migrate deploy
-COPY packages/backend/prisma         ./packages/backend/prisma
-COPY packages/backend/prisma.config.ts ./packages/backend/
 
 # Entrypoint
 COPY packages/backend/entrypoint.sh ./entrypoint.sh
