@@ -95,3 +95,10 @@ model AppSettings {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
+
+model Task {
+  id            String   @id @default(cuid())
+  encryptedData String   // { title, description?, column, assigneeId?, assigneeName?, deadline? }
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}

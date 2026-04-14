@@ -31,7 +31,7 @@ function CreditCard({ credit, payments }: { credit: Credit; payments: Transactio
   const sortedPayments = [...payments].sort((a, b) => b.date.localeCompare(a.date))
 
   return (
-    <Box bg="white" rounded="lg" shadow="sm" p={5} mb={4}>
+    <Box bg="white" rounded="lg" shadow="sm" p={5} mb={4} overflowX="auto">
       <Flex justify="space-between" align="start" mb={4}>
         <Box>
           <Heading size="sm">{credit.personName}</Heading>
