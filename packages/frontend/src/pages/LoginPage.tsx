@@ -44,7 +44,7 @@ export default function LoginPage() {
       // 4. Vault Key entschlüsseln
       const vaultKey = decryptVaultKey(encryptedVaultKey, keypair.publicKey, keypair.privateKey)
 
-      login(token, encryptedVaultKey, kdfSalt, vaultKey, role, userId)
+      login(token, encryptedVaultKey, kdfSalt, vaultKey, role, userId, name)
       navigate('/')
     } catch (e: any) {
       setError(e.message)

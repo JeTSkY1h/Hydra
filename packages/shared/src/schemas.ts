@@ -58,3 +58,16 @@ export type AppSettings = {
   id: string
   memberCount: number
 }
+
+export type KanbanColumn = 'todo' | 'inProgress' | 'inReview' | 'done'
+
+export type Task = {
+  id: string
+  title: string
+  description?: string
+  column: KanbanColumn
+  assigneeId?: string
+  assigneeName?: string
+  deadline?: string   // ISO-Datum: "2026-03-06"
+  category?: string
+}

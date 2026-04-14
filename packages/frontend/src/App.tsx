@@ -10,6 +10,7 @@ import BudgetPage from './pages/BudgetPage'
 import KreditePage from './pages/KreditePage'
 import VermoegenPage from './pages/VermoegenPage'
 import EinstellungenPage from './pages/EinstellungenPage'
+import KanbanPage from './pages/KanbanPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token } = useAuth()
@@ -38,6 +39,7 @@ export default function App() {
               <Route path="kredite" element={<KreditePage />} />
               <Route path="vermoegen" element={<VermoegenPage />} />
               <Route path="einstellungen" element={<EinstellungenPage />} />
+              <Route path="aufgaben" element={<KanbanPage />} />
             </Route>
           </Routes>
         </BrowserRouter>

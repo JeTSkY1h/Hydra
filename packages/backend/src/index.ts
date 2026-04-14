@@ -6,6 +6,7 @@ import { authRouter, requireAuth } from './auth.js'
 import { inviteRouter } from './invites.js'
 import { dataRouter } from './data.js'
 import { usersRouter } from './users.js'
+import { tasksRouter } from './tasks.js'
 import { db } from './db.js'
 import type { AppVariables } from './types.js'
 
@@ -35,6 +36,7 @@ app.route('/api/auth', authRouter)
 app.route('/api/invites', inviteRouter)
 app.route('/api/data', dataRouter)
 app.route('/api/users', usersRouter)
+app.route('/api/tasks', tasksRouter)
 
 // Beispiel einer geschützten Route
 app.get('/api/me', requireAuth, async (c) => {

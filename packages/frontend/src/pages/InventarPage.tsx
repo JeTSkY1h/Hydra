@@ -208,7 +208,7 @@ function CategoryBlock({ category, products }: { category: Category; products: P
   const totalValue = products.reduce((sum, p) => sum + (p.buyPrice ?? 0) * p.quantity, 0)
 
   return (
-    <Box bg="white" rounded="lg" shadow="sm" p={4} mb={4}>
+    <Box bg="white" rounded="lg" shadow="sm" p={4} mb={4} overflowX="auto">
       <Flex justify="space-between" align="center" mb={collapsed ? 0 : 3}>
         <HStack gap={2} cursor="pointer" onClick={() => setCollapsed((v) => !v)} flex={1}>
           <Text fontSize="xs" color="gray.400">{collapsed ? '▶' : '▼'}</Text>

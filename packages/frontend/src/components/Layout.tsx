@@ -1,6 +1,10 @@
-import { useEffect } from 'react'
-import { Outlet, NavLink, useNavigate } from 'react-router-dom'
-import { Box, Flex, Text, Button, VStack, HStack } from '@chakra-ui/react'
+import { useEffect, useState } from 'react'
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
+import {
+  Box, Flex, Text, Button, VStack, HStack, IconButton,
+  Drawer, Portal,
+} from '@chakra-ui/react'
+import { FaBars, FaXmark } from 'react-icons/fa6'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import UnlockOverlay from './UnlockOverlay'
@@ -12,17 +16,46 @@ const navItems = [
   { to: '/budget', label: 'Budget' },
   { to: '/kredite', label: 'Kredite' },
   { to: '/vermoegen', label: 'Vermögen' },
+  { to: '/aufgaben', label: 'Aufgaben' },
   { to: '/einstellungen', label: 'Einstellungen' },
 ]
+
+function NavLinks({ onClose }: { onClose?: () => void }) {
+  return (
+    <VStack align="stretch" gap={1} flex={1}>
+      {navItems.map(({ to, label, end }) => (
+        <NavLink key={to} to={to} end={end} onClick={onClose}>
+          {({ isActive }) => (
+            <Box
+              px={3} py={2} rounded="md" fontSize="sm"
+              bg={isActive ? 'gray.700' : 'transparent'}
+              _hover={{ bg: 'gray.700' }}
+              cursor="pointer"
+            >
+              {label}
+            </Box>
+          )}
+        </NavLink>
+      ))}
+    </VStack>
+  )
+}
 
 export default function Layout() {
   const { logout, vaultKey } = useAuth()
   const { loadAll } = useData()
   const navigate = useNavigate()
+  const location = useLocation()
+  const [drawerOpen, setDrawerOpen] = useState(false)
 
   useEffect(() => {
     if (vaultKey) loadAll()
   }, [vaultKey, loadAll])
+
+  // Drawer schließen wenn Route wechselt
+  useEffect(() => {
+    setDrawerOpen(false)
+  }, [location.pathname])
 
   function handleLogout() {
     logout()
@@ -33,44 +66,95 @@ export default function Layout() {
 
   return (
     <Flex minH="100vh">
-      {/* Sidebar */}
-      <Box w="200px" bg="gray.900" color="white" p={4} flexShrink={0} display="flex" flexDirection="column">
-        <Text fontWeight="bold" fontSize="lg" mb={8}>Hydra</Text>
-        <VStack align="stretch" gap={1} flex={1}>
-          {navItems.map(({ to, label, end }) => (
-            <NavLink key={to} to={to} end={end}>
-              {({ isActive }) => (
-                <Box
-                  px={3} py={2} rounded="md" fontSize="sm"
-                  bg={isActive ? 'gray.700' : 'transparent'}
-                  _hover={{ bg: 'gray.700' }}
-                  cursor="pointer"
-                >
-                  {label}
-                </Box>
-              )}
-            </NavLink>
-          ))}
-        </VStack>
 
+      {/* ── Desktop-Sidebar (ab md) ─────────────────────────────────── */}
+      <Box
+        display={{ base: 'none', md: 'flex' }}
+        w="200px"
+        bg="gray.900"
+        color="white"
+        p={4}
+        flexShrink={0}
+        flexDirection="column"
+      >
+        <Text fontWeight="bold" fontSize="lg" mb={8}>Hydra</Text>
+        <NavLinks />
         <HStack mt="auto" gap={1}>
           <SettingsModal />
-          <Button
-            variant="ghost"
-            color="gray.400"
-            size="sm"
-            onClick={handleLogout}
-            flex={1}
-          >
+          <Button variant="ghost" color="gray.400" size="sm" onClick={handleLogout} flex={1}>
             Abmelden
           </Button>
         </HStack>
       </Box>
 
-      {/* Hauptinhalt */}
-      <Box flex={1} p={8} bg="gray.50" overflowY="auto">
-        <Outlet />
-      </Box>
+      {/* ── Rechte Seite ────────────────────────────────────────────── */}
+      <Flex flex={1} direction="column" minW={0}>
+
+        {/* Mobile-Topbar (bis md) */}
+        <Flex
+          display={{ base: 'flex', md: 'none' }}
+          align="center"
+          justify="space-between"
+          px={4}
+          py={3}
+          bg="gray.900"
+          color="white"
+          flexShrink={0}
+        >
+          <Text fontWeight="bold" fontSize="md">Hydra</Text>
+          <IconButton
+            aria-label="Menü öffnen"
+            variant="ghost"
+            color="white"
+            size="sm"
+            onClick={() => setDrawerOpen(true)}
+          >
+            <FaBars />
+          </IconButton>
+        </Flex>
+
+        {/* Hauptinhalt */}
+        <Box flex={1} p={{ base: 4, md: 8 }} bg="gray.50" overflowY="auto">
+          <Outlet />
+        </Box>
+      </Flex>
+
+      {/* ── Mobile Drawer ────────────────────────────────────────────── */}
+      <Drawer.Root open={drawerOpen} onOpenChange={e => setDrawerOpen(e.open)} placement="start">
+        <Portal>
+          <Drawer.Backdrop />
+          <Drawer.Positioner>
+            <Drawer.Content bg="gray.900" color="white" maxW="240px">
+              <Drawer.Header borderBottomWidth={0} pt={4} pb={2}>
+                <Flex justify="space-between" align="center">
+                  <Text fontWeight="bold" fontSize="lg">Hydra</Text>
+                  <Drawer.CloseTrigger asChild>
+                    <IconButton aria-label="Schließen" variant="ghost" color="gray.400" size="sm">
+                      <FaXmark />
+                    </IconButton>
+                  </Drawer.CloseTrigger>
+                </Flex>
+              </Drawer.Header>
+              <Drawer.Body px={4} py={2} display="flex" flexDirection="column">
+                <NavLinks onClose={() => setDrawerOpen(false)} />
+                <HStack mt={6} gap={1}>
+                  <SettingsModal />
+                  <Button
+                    variant="ghost"
+                    color="gray.400"
+                    size="sm"
+                    onClick={() => { setDrawerOpen(false); handleLogout() }}
+                    flex={1}
+                  >
+                    Abmelden
+                  </Button>
+                </HStack>
+              </Drawer.Body>
+            </Drawer.Content>
+          </Drawer.Positioner>
+        </Portal>
+      </Drawer.Root>
+
     </Flex>
   )
 }

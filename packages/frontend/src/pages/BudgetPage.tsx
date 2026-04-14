@@ -304,7 +304,7 @@ export default function BudgetPage() {
       <Flex gap={6} flexDir={{ base: 'column', lg: 'row' }}>
 
         {/* Einnahmen */}
-        <Box flex={1} bg="white" rounded="lg" shadow="sm" p={4}>
+        <Box flex={1} bg="white" rounded="lg" shadow="sm" p={4} overflowX="auto">
           <Heading size="sm" color="green.600" mb={3}>
             Einnahmen — {formatEur(income.reduce((s, t) => s + t.amountCents, 0))}
           </Heading>
@@ -336,7 +336,7 @@ export default function BudgetPage() {
         </Box>
 
         {/* Ausgaben */}
-        <Box flex={1} bg="white" rounded="lg" shadow="sm" p={4}>
+        <Box flex={1} bg="white" rounded="lg" shadow="sm" p={4} overflowX="auto">
           <Heading size="sm" color="red.600" mb={3}>
             Ausgaben — {formatEur(expenses.reduce((s, t) => s + t.amountCents, 0))}
           </Heading>
