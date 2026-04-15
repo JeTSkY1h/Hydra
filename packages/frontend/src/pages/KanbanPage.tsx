@@ -11,10 +11,10 @@ import {
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import {
-  Badge, Box, Button, Flex, Heading, HStack, Input,
-  IconButton, NativeSelect, Spinner, Text, Textarea, VStack,
+  Badge, Box, Button, Dialog, Field, Flex, Heading, HStack, Input,
+  IconButton, NativeSelect, Portal, Spinner, Text, Textarea, VStack,
 } from '@chakra-ui/react'
-import { FaTrash } from 'react-icons/fa6'
+import { FaPencil, FaTrash } from 'react-icons/fa6'
 import { useAuth } from '../context/AuthContext'
 import { apiGet, apiPost, apiPut, apiDelete } from '../lib/api'
 import { encrypt, decrypt } from '../lib/crypto'
@@ -44,6 +44,7 @@ function TaskCard({
   onMove,
   onDelete,
   onAssign,
+  onEdit,
   users,
   isDragging = false,
 }: {
@@ -51,6 +52,7 @@ function TaskCard({
   onMove: (task: Task, col: KanbanColumn) => void
   onDelete: (id: string) => void
   onAssign: (task: Task, userId: string, userName: string) => void
+  onEdit: (task: Task) => void
   users: UserOption[]
   isDragging?: boolean
 }) {
@@ -107,7 +109,12 @@ function TaskCard({
           )}
         </HStack>
         {task.description && (
-          <Text fontSize="xs" color="gray.500" mb={2} whiteSpace="pre-wrap">
+          <Text
+            fontSize="xs"
+            color="gray.500"
+            mb={2}
+            style={{ display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+          >
             {task.description}
           </Text>
         )}
@@ -146,7 +153,7 @@ function TaskCard({
         )}
       </Box>
 
-      {/* Navigation + Löschen */}
+      {/* Navigation + Aktionen */}
       <HStack justify="space-between" mt={2}>
         <HStack gap={1}>
           {colIndex > 0 && (
@@ -156,9 +163,14 @@ function TaskCard({
             <Button size="xs" variant="ghost" px={1} onClick={() => onMove(task, COLUMNS[colIndex + 1].id)}>→</Button>
           )}
         </HStack>
-        <IconButton size="xs" variant="ghost" colorPalette="red" aria-label="Löschen" onClick={() => onDelete(task.id)}>
-          <FaTrash />
-        </IconButton>
+        <HStack gap={1}>
+          <IconButton size="xs" variant="ghost" colorPalette="blue" aria-label="Bearbeiten" onClick={() => onEdit(task)}>
+            <FaPencil />
+          </IconButton>
+          <IconButton size="xs" variant="ghost" colorPalette="red" aria-label="Löschen" onClick={() => onDelete(task.id)}>
+            <FaTrash />
+          </IconButton>
+        </HStack>
       </HStack>
     </Box>
   )
@@ -167,13 +179,14 @@ function TaskCard({
 // ─── Spalte ───────────────────────────────────────────────────────────────────
 
 function KanbanColumnView({
-  column, tasks, onMove, onDelete, onAssign, users, activeId,
+  column, tasks, onMove, onDelete, onAssign, onEdit, users, activeId,
 }: {
   column: typeof COLUMNS[number]
   tasks: Task[]
   onMove: (task: Task, col: KanbanColumn) => void
   onDelete: (id: string) => void
   onAssign: (task: Task, userId: string, userName: string) => void
+  onEdit: (task: Task) => void
   users: UserOption[]
   activeId: string | null
 }) {
@@ -193,6 +206,7 @@ function KanbanColumnView({
                 onMove={onMove}
                 onDelete={onDelete}
                 onAssign={onAssign}
+                onEdit={onEdit}
                 users={users}
                 isDragging={activeId === task.id}
               />
@@ -201,6 +215,100 @@ function KanbanColumnView({
         </SortableContext>
       </Box>
     </Box>
+  )
+}
+
+// ─── Aufgabe bearbeiten ───────────────────────────────────────────────────────
+
+function EditTaskModal({
+  task,
+  categories,
+  onSave,
+  onClose,
+}: {
+  task: Task
+  categories: string[]
+  onSave: (updated: Task) => Promise<void>
+  onClose: () => void
+}) {
+  const [title, setTitle]           = useState(task.title)
+  const [description, setDescription] = useState(task.description ?? '')
+  const [deadline, setDeadline]     = useState(task.deadline ?? '')
+  const [category, setCategory]     = useState(task.category ?? '')
+  const [customCat, setCustomCat]   = useState('')
+  const [loading, setLoading]       = useState(false)
+
+  async function handleSave() {
+    if (!title.trim()) return
+    const finalCat = category === '__new__' ? customCat.trim() : category
+    setLoading(true)
+    try {
+      await onSave({
+        ...task,
+        title: title.trim(),
+        description: description.trim() || undefined,
+        deadline: deadline || undefined,
+        category: finalCat || undefined,
+      })
+      onClose()
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Dialog.Root open onOpenChange={(e) => { if (!e.open) onClose() }}>
+      <Portal>
+        <Dialog.Backdrop />
+        <Dialog.Positioner>
+          <Dialog.Content maxW="480px">
+            <Dialog.Header>
+              <Dialog.Title>Aufgabe bearbeiten</Dialog.Title>
+            </Dialog.Header>
+            <Dialog.Body>
+              <VStack gap={3} align="stretch">
+                <Field.Root>
+                  <Field.Label>Titel</Field.Label>
+                  <Input value={title} onChange={e => setTitle(e.target.value)} size="sm" autoFocus />
+                </Field.Root>
+                <Field.Root>
+                  <Field.Label>Beschreibung</Field.Label>
+                  <Textarea
+                    value={description}
+                    onChange={e => setDescription(e.target.value)}
+                    size="sm"
+                    rows={6}
+                    placeholder="Beschreibung (optional)"
+                  />
+                </Field.Root>
+                <Field.Root>
+                  <Field.Label>Fälligkeitsdatum</Field.Label>
+                  <Input type="date" value={deadline} onChange={e => setDeadline(e.target.value)} size="sm" />
+                </Field.Root>
+                <Field.Root>
+                  <Field.Label>Kategorie</Field.Label>
+                  <NativeSelect.Root size="sm">
+                    <NativeSelect.Field value={category} onChange={e => setCategory(e.target.value)}>
+                      <option value="">Keine Kategorie</option>
+                      {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                      <option value="__new__">+ Neue Kategorie…</option>
+                    </NativeSelect.Field>
+                    <NativeSelect.Indicator />
+                  </NativeSelect.Root>
+                  {category === '__new__' && (
+                    <Input mt={2} placeholder="Kategoriename" value={customCat} onChange={e => setCustomCat(e.target.value)} size="sm" />
+                  )}
+                </Field.Root>
+              </VStack>
+            </Dialog.Body>
+            <Dialog.Footer>
+              <Button variant="ghost" onClick={onClose}>Abbrechen</Button>
+              <Button onClick={handleSave} loading={loading}>Speichern</Button>
+            </Dialog.Footer>
+          </Dialog.Content>
+        </Dialog.Positioner>
+      </Portal>
+    </Dialog.Root>
   )
 }
 
@@ -213,13 +321,18 @@ function AddTaskForm({
   categories: string[]
   onAdd: (title: string, description: string, deadline: string, category: string) => Promise<void>
 }) {
-  const [open, setOpen]             = useState(false)
-  const [title, setTitle]           = useState('')
+  const [open, setOpen]               = useState(false)
+  const [title, setTitle]             = useState('')
   const [description, setDescription] = useState('')
-  const [deadline, setDeadline]     = useState('')
-  const [category, setCategory]     = useState('')
-  const [customCat, setCustomCat]   = useState('')
-  const [loading, setLoading]       = useState(false)
+  const [deadline, setDeadline]       = useState('')
+  const [category, setCategory]       = useState('')
+  const [customCat, setCustomCat]     = useState('')
+  const [loading, setLoading]         = useState(false)
+
+  function handleClose() {
+    setOpen(false)
+    setTitle(''); setDescription(''); setDeadline(''); setCategory(''); setCustomCat('')
+  }
 
   async function submit() {
     if (!title.trim()) return
@@ -227,42 +340,68 @@ function AddTaskForm({
     setLoading(true)
     try {
       await onAdd(title.trim(), description.trim(), deadline, finalCat)
-      setTitle(''); setDescription(''); setDeadline(''); setCategory(''); setCustomCat('')
-      setOpen(false)
+      handleClose()
     } finally {
       setLoading(false)
     }
   }
 
-  if (!open) return <Button size="sm" onClick={() => setOpen(true)}>+ Neue Aufgabe</Button>
-
   return (
-    <Box bg="white" p={4} rounded="lg" shadow="sm" w="320px">
-      <VStack gap={2} align="stretch">
-        <Input placeholder="Titel" value={title} onChange={e => setTitle(e.target.value)} size="sm" autoFocus />
-        <Textarea placeholder="Beschreibung (optional)" value={description} onChange={e => setDescription(e.target.value)} size="sm" rows={3} />
-        <Input type="date" value={deadline} onChange={e => setDeadline(e.target.value)} size="sm" />
-
-        {/* Kategorie */}
-        <NativeSelect.Root size="sm">
-          <NativeSelect.Field value={category} onChange={e => setCategory(e.target.value)}>
-            <option value="">Keine Kategorie</option>
-            {categories.map(c => <option key={c} value={c}>{c}</option>)}
-            <option value="__new__">+ Neue Kategorie…</option>
-          </NativeSelect.Field>
-          <NativeSelect.Indicator />
-        </NativeSelect.Root>
-
-        {category === '__new__' && (
-          <Input placeholder="Kategoriename" value={customCat} onChange={e => setCustomCat(e.target.value)} size="sm" />
-        )}
-
-        <HStack>
-          <Button size="sm" onClick={submit} loading={loading} flex={1}>Erstellen</Button>
-          <Button size="sm" variant="ghost" onClick={() => setOpen(false)}>Abbrechen</Button>
-        </HStack>
-      </VStack>
-    </Box>
+    <>
+      <Button size="sm" onClick={() => setOpen(true)}>+ Neue Aufgabe</Button>
+      <Dialog.Root open={open} onOpenChange={(e) => { if (!e.open) handleClose() }}>
+        <Portal>
+          <Dialog.Backdrop />
+          <Dialog.Positioner>
+            <Dialog.Content maxW="480px">
+              <Dialog.Header>
+                <Dialog.Title>Neue Aufgabe</Dialog.Title>
+              </Dialog.Header>
+              <Dialog.Body>
+                <VStack gap={3} align="stretch">
+                  <Field.Root>
+                    <Field.Label>Titel</Field.Label>
+                    <Input value={title} onChange={e => setTitle(e.target.value)} size="sm" autoFocus />
+                  </Field.Root>
+                  <Field.Root>
+                    <Field.Label>Beschreibung</Field.Label>
+                    <Textarea
+                      value={description}
+                      onChange={e => setDescription(e.target.value)}
+                      size="sm"
+                      rows={6}
+                      placeholder="Beschreibung (optional)"
+                    />
+                  </Field.Root>
+                  <Field.Root>
+                    <Field.Label>Fälligkeitsdatum</Field.Label>
+                    <Input type="date" value={deadline} onChange={e => setDeadline(e.target.value)} size="sm" />
+                  </Field.Root>
+                  <Field.Root>
+                    <Field.Label>Kategorie</Field.Label>
+                    <NativeSelect.Root size="sm">
+                      <NativeSelect.Field value={category} onChange={e => setCategory(e.target.value)}>
+                        <option value="">Keine Kategorie</option>
+                        {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                        <option value="__new__">+ Neue Kategorie…</option>
+                      </NativeSelect.Field>
+                      <NativeSelect.Indicator />
+                    </NativeSelect.Root>
+                    {category === '__new__' && (
+                      <Input mt={2} placeholder="Kategoriename" value={customCat} onChange={e => setCustomCat(e.target.value)} size="sm" />
+                    )}
+                  </Field.Root>
+                </VStack>
+              </Dialog.Body>
+              <Dialog.Footer>
+                <Button variant="ghost" onClick={handleClose}>Abbrechen</Button>
+                <Button onClick={submit} loading={loading}>Erstellen</Button>
+              </Dialog.Footer>
+            </Dialog.Content>
+          </Dialog.Positioner>
+        </Portal>
+      </Dialog.Root>
+    </>
   )
 }
 
@@ -276,6 +415,7 @@ export default function KanbanPage() {
   const [users, setUsers]     = useState<UserOption[]>([])
   const [loading, setLoading] = useState(true)
   const [activeId, setActiveId] = useState<string | null>(null)
+  const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [filterCat, setFilterCat] = useState<string>('')
   const [mobileCol, setMobileCol] = useState<KanbanColumn>('todo') // '' = alle
 
@@ -349,6 +489,16 @@ export default function KanbanPage() {
     })
   }, [token, vaultKey])
 
+  // ─── Bearbeiten ────────────────────────────────────────────────────────────
+
+  const handleEdit = useCallback((task: Task) => {
+    setEditingTask(task)
+  }, [])
+
+  const handleSaveEdit = useCallback(async (updated: Task) => {
+    await saveTask(updated)
+  }, [token, vaultKey])
+
   // ─── Löschen ───────────────────────────────────────────────────────────────
 
   const handleDelete = useCallback(async (id: string) => {
@@ -387,6 +537,14 @@ export default function KanbanPage() {
 
   return (
     <Box>
+      {editingTask && (
+        <EditTaskModal
+          task={editingTask}
+          categories={categories}
+          onSave={handleSaveEdit}
+          onClose={() => setEditingTask(null)}
+        />
+      )}
       <Flex justify="space-between" align="center" mb={4}>
         <Heading>Aufgaben</Heading>
         <AddTaskForm categories={categories} onAdd={handleAdd} />
@@ -441,6 +599,7 @@ export default function KanbanPage() {
             onMove={handleMove}
             onDelete={handleDelete}
             onAssign={handleAssign}
+            onEdit={handleEdit}
             users={users}
             activeId={activeId}
           />
@@ -459,6 +618,7 @@ export default function KanbanPage() {
               onMove={handleMove}
               onDelete={handleDelete}
               onAssign={handleAssign}
+              onEdit={handleEdit}
               users={users}
               activeId={activeId}
             />
