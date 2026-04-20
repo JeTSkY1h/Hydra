@@ -18,12 +18,28 @@ type AuthContextType = {
   unlockVaultKey: (password: string) => Promise<void>
 }
 
+const AUTH_KEYS = ['hydra_token', 'hydra_evk', 'hydra_kdf_salt', 'hydra_role', 'hydra_user_id', 'hydra_user_name'] as const
+
+function getStoredToken(): string | null {
+  const stored = localStorage.getItem('hydra_token')
+  if (!stored) return null
+  try {
+    const payload = JSON.parse(atob(stored.split('.')[1]))
+    if (payload.exp * 1000 < Date.now()) {
+      AUTH_KEYS.forEach(k => localStorage.removeItem(k))
+      return null
+    }
+  } catch {
+    AUTH_KEYS.forEach(k => localStorage.removeItem(k))
+    return null
+  }
+  return stored
+}
+
 const AuthContext = createContext<AuthContextType | null>(null)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [token, setToken] = useState<string | null>(
-    () => localStorage.getItem('hydra_token')
-  )
+  const [token, setToken] = useState<string | null>(getStoredToken)
   const [userId, setUserId] = useState<string | null>(
     () => localStorage.getItem('hydra_user_id')
   )
