@@ -4,7 +4,7 @@ import {
   Box, Flex, Text, Button, VStack, HStack, IconButton,
   Drawer, Portal,
 } from '@chakra-ui/react'
-import { FaBars, FaXmark } from 'react-icons/fa6'
+import { FaBars, FaMoon, FaSun, FaXmark } from 'react-icons/fa6'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import UnlockOverlay from './UnlockOverlay'
@@ -17,7 +17,7 @@ const navItems = [
   { to: '/kredite', label: 'Kredite' },
   { to: '/vermoegen', label: 'Vermögen' },
   { to: '/aufgaben', label: 'Aufgaben' },
-  { to: '/einstellungen', label: 'Einstellungen' },
+  { to: '/einstellungen', label: 'Nutzerverwaltung' },
 ]
 
 function NavLinks({ onClose }: { onClose?: () => void }) {
@@ -41,12 +41,26 @@ function NavLinks({ onClose }: { onClose?: () => void }) {
   )
 }
 
+function useColorMode() {
+  const [isDark, setIsDark] = useState(
+    () => localStorage.getItem('hydra_theme') === 'dark'
+  )
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light')
+    localStorage.setItem('hydra_theme', isDark ? 'dark' : 'light')
+  }, [isDark])
+
+  return { isDark, toggle: () => setIsDark(v => !v) }
+}
+
 export default function Layout() {
   const { logout, vaultKey } = useAuth()
   const { loadAll } = useData()
   const navigate = useNavigate()
   const location = useLocation()
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const { isDark, toggle } = useColorMode()
 
   useEffect(() => {
     if (vaultKey) loadAll()
@@ -70,7 +84,11 @@ export default function Layout() {
       {/* ── Desktop-Sidebar (ab md) ─────────────────────────────────── */}
       <Box
         display={{ base: 'none', md: 'flex' }}
+        position="fixed"
+        top={0}
+        left={0}
         w="200px"
+        h="100vh"
         bg="gray.900"
         color="white"
         p={4}
@@ -81,6 +99,9 @@ export default function Layout() {
         <NavLinks />
         <HStack mt="auto" gap={1}>
           <SettingsModal />
+          <IconButton variant="ghost" color="gray.400" size="sm" aria-label="Theme wechseln" onClick={toggle}>
+            {isDark ? <FaSun /> : <FaMoon />}
+          </IconButton>
           <Button variant="ghost" color="gray.400" size="sm" onClick={handleLogout} flex={1}>
             Abmelden
           </Button>
@@ -88,7 +109,7 @@ export default function Layout() {
       </Box>
 
       {/* ── Rechte Seite ────────────────────────────────────────────── */}
-      <Flex flex={1} direction="column" minW={0}>
+      <Flex flex={1} direction="column" minW={0} ml={{ base: 0, md: '200px' }}>
 
         {/* Mobile-Topbar (bis md) */}
         <Flex
