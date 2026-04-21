@@ -11,6 +11,7 @@ import KreditePage from './pages/KreditePage'
 import VermoegenPage from './pages/VermoegenPage'
 import EinstellungenPage from './pages/EinstellungenPage'
 import KanbanPage from './pages/KanbanPage'
+import { ThemeProvider } from './context/ThemeContext'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token } = useAuth()
@@ -21,6 +22,7 @@ export default function App() {
   return (
     <AuthProvider>
       <DataProvider>
+        <ThemeProvider>
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
@@ -43,6 +45,7 @@ export default function App() {
             </Route>
           </Routes>
         </BrowserRouter>
+        </ThemeProvider>
       </DataProvider>
     </AuthProvider>
   )
