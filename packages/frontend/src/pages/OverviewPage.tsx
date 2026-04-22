@@ -7,6 +7,7 @@ import {
   ReferenceLine, ResponsiveContainer,
 } from 'recharts'
 import { useData } from '../context/DataContext'
+import { useTheme } from '../context/ThemeContext'
 import type { Transaction } from '@hydra/shared'
 
 const MEMBER_FEE_CENTS = 5000 // 50€ pro Mitglied pro Monat
@@ -23,9 +24,10 @@ const MONTHS = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
 // ─── Gewinnbalken ─────────────────────────────────────────────────────────────
 
 function ProfitBar({ value, max, color }: { value: number; max: number; color: string }) {
+  const { isDark } = useTheme()
   const pct = max > 0 ? Math.max(0, (value / max) * 100) : 0
   return (
-    <Box bg="gray.100" rounded="full" h="6px" flex={1}>
+    <Box bg={isDark ? 'gray.600' : 'gray.100'} rounded="full" h="6px" flex={1}>
       <Box bg={color} rounded="full" h="6px" w={`${pct}%`} transition="width 0.4s" />
     </Box>
   )
@@ -40,6 +42,7 @@ function CategoryRanking({ transactions, period, month, year }: {
   year: number
 }) {
   const { data } = useData()
+  const { isDark } = useTheme()
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
 
   const filtered = useMemo(() => {
@@ -50,7 +53,6 @@ function CategoryRanking({ transactions, period, month, year }: {
     })
   }, [transactions, period, month, year])
 
-  // Gewinn pro Kategorie berechnen
   const categoryStats = useMemo(() => {
     const stats: Record<string, { revenue: number; cost: number; name: string }> = {}
 
@@ -77,7 +79,6 @@ function CategoryRanking({ transactions, period, month, year }: {
       .sort((a, b) => b.profit - a.profit)
   }, [filtered, data.categories, data.products])
 
-  // Gewinn pro Produkt in ausgewählter Kategorie
   const productStats = useMemo(() => {
     const catId = selectedCategoryId ?? categoryStats[0]?.id
     if (!catId) return []
@@ -118,7 +119,7 @@ function CategoryRanking({ transactions, period, month, year }: {
   return (
     <Flex gap={6} flexDir={{ base: 'column', lg: 'row' }}>
       {/* Kategorien */}
-      <Box flex={1} bg="white" rounded="lg" shadow="sm" p={5}>
+      <Box flex={1} bg={isDark ? 'gray.700' : 'white'} rounded="lg" shadow="sm" p={5}>
         <Heading size="sm" mb={4}>Kategorien nach Gewinn</Heading>
         <VStack align="stretch" gap={3}>
           {categoryStats.map((cat, i) => (
@@ -128,21 +129,21 @@ function CategoryRanking({ transactions, period, month, year }: {
               onClick={() => setSelectedCategoryId(cat.id)}
               p={2}
               rounded="md"
-              bg={cat.id === activeCategoryId ? 'blue.50' : 'transparent'}
-              _hover={{ bg: 'gray.50' }}
+              bg={cat.id === activeCategoryId ? isDark ? 'blue.900' : 'blue.50' : 'transparent'}
+              _hover={{ bg: isDark ? 'gray.600' : 'gray.50' }}
             >
               <Flex justify="space-between" mb={1}>
                 <HStack gap={2}>
                   {i === 0 && <Badge colorPalette="yellow" size="sm">★ Best</Badge>}
-                  <Text fontSize="sm" fontWeight={cat.id === activeCategoryId ? 'bold' : 'normal'}>
+                  <Text fontSize="sm" fontWeight={cat.id === activeCategoryId ? 'bold' : 'normal'} color={isDark ? "gray.100" : "black"}>
                     {cat.name}
                   </Text>
                 </HStack>
                 <VStack align="end" gap={0}>
-                  <Text fontSize="sm" fontWeight="bold" color={cat.profit >= 0 ? 'green.600' : 'red.500'}>
+                  <Text fontSize="sm" fontWeight="bold" color={cat.profit >= 0 ? isDark ? 'green.400' : 'green.600' : isDark ? 'red.400' : 'red.500'}>
                     {formatEur(cat.profit)}
                   </Text>
-                  <Text fontSize="xs" color="gray.400">
+                  <Text fontSize="xs" color={isDark ? 'gray.400' : 'gray.400'}>
                     Einnahmen: {formatEur(cat.revenue)}
                   </Text>
                 </VStack>
@@ -154,11 +155,11 @@ function CategoryRanking({ transactions, period, month, year }: {
       </Box>
 
       {/* Top-Produkte der ausgewählten Kategorie */}
-      <Box flex={1} bg="white" rounded="lg" shadow="sm" p={5}>
+      <Box flex={1} bg={isDark ? 'gray.700' : 'white'} rounded="lg" shadow="sm" p={5}>
         <Heading size="sm" mb={1}>
           Top Produkte — {data.categories.find((c) => c.id === activeCategoryId)?.name}
         </Heading>
-        <Text fontSize="xs" color="gray.400" mb={4}>Klick auf eine Kategorie um sie zu wechseln</Text>
+        <Text fontSize="xs" color={isDark ? 'gray.500' : 'gray.400'} mb={4}>Klick auf eine Kategorie um sie zu wechseln</Text>
         {productStats.length === 0
           ? <Text color="gray.400" fontSize="sm">Keine Daten</Text>
           : (
@@ -169,13 +170,13 @@ function CategoryRanking({ transactions, period, month, year }: {
                     <HStack gap={2}>
                       {i === 0 && <Badge colorPalette="green" size="sm">★ Top</Badge>}
                       <Text fontSize="sm">{p.name}</Text>
-                      <Text fontSize="xs" color="gray.400">{p.quantity}×</Text>
+                      <Text fontSize="xs" color={isDark ? 'gray.500' : 'gray.400'}>{p.quantity}×</Text>
                     </HStack>
                     <VStack align="end" gap={0}>
-                      <Text fontSize="sm" fontWeight="bold" color={p.profit >= 0 ? 'green.600' : 'red.500'}>
+                      <Text fontSize="sm" fontWeight="bold" color={p.profit >= 0 ? isDark ? 'green.400' : 'green.600' : isDark ? 'red.400' : 'red.500'}>
                         {formatEur(p.profit)}
                       </Text>
-                      <Text fontSize="xs" color="gray.400">
+                      <Text fontSize="xs" color={isDark ? 'gray.500' : 'gray.400'}>
                         {formatEur(p.revenue)} Einnahmen
                       </Text>
                     </VStack>
@@ -195,13 +196,13 @@ function CategoryRanking({ transactions, period, month, year }: {
 
 function TotalBlock() {
   const { data } = useData()
+  const { isDark } = useTheme()
   const now = new Date()
   const month = now.getMonth() + 1
   const year = now.getFullYear()
 
   const memberCount = data.settings?.memberCount ?? 0
 
-  // Cash: aktueller Monat
   const monthlyCash = data.monthlyCashes.find((m) => m.month === month && m.year === year)
   const monthTransactions = data.transactions.filter((t) => {
     const d = new Date(t.date)
@@ -211,13 +212,8 @@ function TotalBlock() {
   const expenses = monthTransactions.filter((t) => t.type === 'EXPENSE').reduce((s, t) => s + t.amountCents, 0)
   const cash = (monthlyCash?.cashStartCents ?? 0) + income - expenses
 
-  // Inventarwert
   const inventoryValue = data.products.reduce((s, p) => s + (p.buyPrice ?? 0) * p.quantity, 0)
-
-  // Vermögenswerte
   const assetValue = data.assets.reduce((s, a) => s + a.valueCents, 0)
-
-  // Offene Kredite
   const openCredits = data.credits.reduce((sum, credit) => {
     const paid = data.transactions
       .filter((t) => t.creditId === credit.id)
@@ -236,23 +232,23 @@ function TotalBlock() {
   ]
 
   return (
-    <Box bg="white" rounded="lg" shadow="sm" p={5} mb={6}>
+    <Box bg={isDark ? 'gray.700' : 'white'} rounded="lg" shadow="sm" p={5} mb={6}>
       <Flex justify="space-between" align="start" flexWrap="wrap" gap={4}>
         {items.map(({ label, value }) => (
           <VStack key={label} align="start" gap={0}>
-            <Text fontSize="xs" color="gray.500">{label}</Text>
+            <Text fontSize="xs" color={isDark ? 'gray.400' : 'gray.500'}>{label}</Text>
             <Text fontWeight="semibold">{formatEur(value)}</Text>
           </VStack>
         ))}
-        <Box w="1px" bg="gray.200" alignSelf="stretch" display={{ base: 'none', lg: 'block' }} />
+        <Box w="1px" bg={isDark ? 'gray.600' : 'gray.200'} alignSelf="stretch" display={{ base: 'none', lg: 'block' }} />
         <VStack align="start" gap={0}>
-          <Text fontSize="xs" color="gray.500">Gesamt</Text>
+          <Text fontSize="xs" color={isDark ? 'gray.400' : 'gray.500'}>Gesamt</Text>
           <Text fontWeight="bold" fontSize="lg">{formatEur(total)}</Text>
         </VStack>
         {perPerson !== null && (
           <VStack align="start" gap={0}>
-            <Text fontSize="xs" color="gray.500">Pro Person ({memberCount})</Text>
-            <Text fontWeight="bold" fontSize="lg" color="blue.600">{formatEur(perPerson)}</Text>
+            <Text fontSize="xs" color={isDark ? 'gray.400' : 'gray.500'}>Pro Person ({memberCount})</Text>
+            <Text fontWeight="bold" fontSize="lg" color={isDark ? 'blue.400' : 'blue.600'}>{formatEur(perPerson)}</Text>
           </VStack>
         )}
         {memberCount === 0 && (
@@ -272,10 +268,10 @@ const MONTH_NAMES = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun',
 
 function MonthlyChart() {
   const { data } = useData()
+  const { isDark } = useTheme()
   const memberCount = data.settings?.memberCount ?? 0
 
   const chartData = useMemo(() => {
-    // Letzte 12 Monate generieren
     const months: { year: number; month: number }[] = []
     const now = new Date()
     for (let i = 11; i >= 0; i--) {
@@ -309,7 +305,6 @@ function MonthlyChart() {
     })
   }, [data.transactions, memberCount])
 
-  // Prüfen ob überhaupt Daten vorhanden
   const hasData = chartData.some((d) => d.Einnahmen > 0 || d.Ausgaben > 0)
   if (!hasData) return null
 
@@ -318,19 +313,29 @@ function MonthlyChart() {
       ? value.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })
       : String(value ?? '')
 
+  const tickColor = isDark ? '#a0aec0' : '#4a5568'
+  const gridColor = isDark ? '#4a5568' : '#e2e8f0'
+
   return (
-    <Box bg="white" rounded="lg" shadow="sm" p={5} mb={6}>
+    <Box bg={isDark ? 'gray.700' : 'white'} rounded="lg" shadow="sm" p={5} mb={6}>
       <Heading size="sm" mb={1}>Monatsverlauf</Heading>
-      <Text fontSize="xs" color="gray.400" mb={4}>
+      <Text fontSize="xs" color={isDark ? 'gray.500' : 'gray.400'} mb={4}>
         Mitgliedsbeiträge = {memberCount} × 50 € Break-even
       </Text>
       <ResponsiveContainer width="100%" height={280}>
         <BarChart data={chartData} margin={{ top: 4, right: 8, left: 8, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} />
-          <XAxis dataKey="label" tick={{ fontSize: 12 }} />
-          <YAxis tickFormatter={(v) => `${v} €`} tick={{ fontSize: 11 }} width={70} />
-          <Tooltip formatter={formatTooltip} />
-          <Legend />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
+          <XAxis dataKey="label" tick={{ fontSize: 12, fill: tickColor }} />
+          <YAxis tickFormatter={(v) => `${v} €`} tick={{ fontSize: 11, fill: tickColor }} width={70} />
+          <Tooltip
+            formatter={formatTooltip}
+            contentStyle={{
+              backgroundColor: isDark ? '#2d3748' : 'white',
+              borderColor: isDark ? '#4a5568' : '#e2e8f0',
+              color: isDark ? '#e2e8f0' : '#1a202c',
+            }}
+          />
+          <Legend wrapperStyle={{ color: tickColor }} />
           <ReferenceLine
             y={memberCount * MEMBER_FEE_CENTS / 100}
             stroke="#ED8936"
@@ -350,6 +355,7 @@ function MonthlyChart() {
 
 export default function OverviewPage() {
   const { data } = useData()
+  const { isDark } = useTheme()
   const now = new Date()
   const [period, setPeriod] = useState<Period>('month')
   const [month] = useState(now.getMonth() + 1)
@@ -361,13 +367,14 @@ export default function OverviewPage() {
         <Box>
           <Heading>Übersicht</Heading>
           {period === 'month' && (
-            <Text fontSize="sm" color="gray.500" mt={1}>
+            <Text fontSize="sm" color={isDark ? 'gray.400' : 'gray.500'} mt={1}>
               {MONTHS[month - 1]} {year}
             </Text>
           )}
         </Box>
         <HStack>
           <Button
+            color={isDark ? "white" : ""}
             size="sm"
             variant={period === 'month' ? 'solid' : 'outline'}
             onClick={() => setPeriod('month')}
@@ -375,6 +382,7 @@ export default function OverviewPage() {
             Dieser Monat
           </Button>
           <Button
+            color={isDark ? "white" : ""}
             size="sm"
             variant={period === 'all' ? 'solid' : 'outline'}
             onClick={() => setPeriod('all')}
