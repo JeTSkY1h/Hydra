@@ -7,6 +7,7 @@ import {
 import { useAuth } from '../context/AuthContext'
 import { apiGet, apiPost, apiDelete, apiPatch } from '../lib/api'
 import { encryptVaultKeyForInvite } from '../lib/crypto'
+import { useTheme } from '../context/ThemeContext'
 
 type User = {
   id: string
@@ -18,6 +19,7 @@ type User = {
 export default function EinstellungenPage() {
   const { token, role, userId, vaultKey } = useAuth()
   const isAdmin = role === 'ADMIN'
+  const { isDark } = useTheme()
 
   const [users, setUsers] = useState<User[]>([])
   const [inviteLink, setInviteLink] = useState('')
@@ -105,7 +107,7 @@ export default function EinstellungenPage() {
   }
 
   return (
-    <Box maxW="600px">
+    <Box maxW="600px" color={isDark ? "gray.100" : "black"}>
       <Heading mb={6}>Einstellungen</Heading>
 
       {/* ─── Nutzerverwaltung (nur Admin) ─────────────────────────── */}
@@ -114,7 +116,7 @@ export default function EinstellungenPage() {
           <Heading size="md" mb={3}>Nutzer</Heading>
           <Stack gap={2} mb={4}>
             {users.map(u => (
-              <HStack key={u.id} justify="space-between" p={3} bg="white" rounded="md" shadow="xs">
+              <HStack key={u.id} justify="space-between" p={3} bg={isDark ? "gray.700" : "white"} rounded="md" shadow="xs">
                 <HStack gap={3}>
                   <Text fontWeight="medium">{u.name}</Text>
                   <Badge colorPalette={u.role === 'ADMIN' ? 'purple' : 'gray'} size="sm">

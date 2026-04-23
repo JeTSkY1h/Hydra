@@ -125,7 +125,7 @@ export default function Layout() {
         </Flex>
 
         {/* Hauptinhalt */}
-        <Box flex={1} p={{ base: 4, md: 8 }} bg={isDark ? "gray.800" : "gray.50"} overflowY="auto">
+        <Box color={isDark ? "white" : ""} flex={1} p={{ base: 4, md: 8 }} bg={isDark ? "gray.800" : "gray.50"} overflowY="auto">
           <Outlet />
         </Box>
       </Flex>

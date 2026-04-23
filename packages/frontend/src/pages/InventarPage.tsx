@@ -7,6 +7,7 @@ import type { Category, Product } from '@hydra/shared'
 import { useData } from '../context/DataContext'
 import { FaTrashAlt, FaPen } from "react-icons/fa"
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../context/ThemeContext'
 
 // ─── Hilfsfunktionen ──────────────────────────────────────────────────────────
 
@@ -24,6 +25,7 @@ function isAdmin() {
 
 function AddCategoryForm({ onDone }: { onDone: () => void }) {
   const { create } = useData()
+  const { isDark } = useTheme()
   const [name, setName] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -39,6 +41,13 @@ function AddCategoryForm({ onDone }: { onDone: () => void }) {
     }
   }
 
+  const inputProps = {
+    bg: isDark ? 'gray.700' : 'white',
+    color: isDark ? 'gray.300' : 'gray.800',
+    borderColor: isDark ? 'gray.600' : 'gray.200',
+    _placeholder: { color: isDark ? 'gray.400' : 'gray.400' },
+  }
+
   return (
     <HStack>
       <Input
@@ -47,6 +56,7 @@ function AddCategoryForm({ onDone }: { onDone: () => void }) {
         placeholder="Kategoriename"
         size="sm"
         onKeyDown={(e) => e.key === 'Enter' && submit()}
+        {...inputProps}
       />
       <Button size="sm" onClick={submit} loading={loading}>Hinzufügen</Button>
     </HStack>
@@ -56,7 +66,8 @@ function AddCategoryForm({ onDone }: { onDone: () => void }) {
 // ─── Produkt hinzufügen ───────────────────────────────────────────────────────
 
 function AddProductForm({ categoryId, onDone }: { categoryId: string; onDone: () => void }) {
-  const { create, update } = useData()
+  const { create } = useData()
+  const { isDark } = useTheme()
   const [name, setName] = useState('')
   const [quantity, setQuantity] = useState('')
   const [buyPrice, setBuyPrice] = useState('')
@@ -81,13 +92,20 @@ function AddProductForm({ categoryId, onDone }: { categoryId: string; onDone: ()
     }
   }
 
+  const inputProps = {
+    bg: isDark ? 'gray.700' : 'white',
+    color: isDark ? 'gray.300' : 'gray.800',
+    borderColor: isDark ? 'gray.600' : 'gray.200',
+    _placeholder: { color: isDark ? 'gray.400' : 'gray.400' },
+  }
+
   return (
     <HStack mt={2}>
       <form onSubmit={(e) => { e.preventDefault(); submit() }} style={{ display: 'contents' }}>
-      <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Produktname" size="sm" />
-      <Input value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="Anzahl" size="sm" w="80px" />
-      <Input value={buyPrice} onKeyDown={(e) => e.key === 'Enter' && submit()} onChange={(e) => setBuyPrice(e.target.value)} placeholder="Preis €" size="sm" w="90px" />
-      <Button size="sm" onClick={submit} loading={loading}>+</Button>
+        <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Produktname" size="sm" {...inputProps} />
+        <Input value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="Anzahl" size="sm" w="80px" {...inputProps} />
+        <Input value={buyPrice} onKeyDown={(e) => e.key === 'Enter' && submit()} onChange={(e) => setBuyPrice(e.target.value)} placeholder="Preis €" size="sm" w="90px" {...inputProps} />
+        <Button size="sm" onClick={submit} loading={loading}>+</Button>
       </form>
     </HStack>
   )
@@ -97,6 +115,7 @@ function AddProductForm({ categoryId, onDone }: { categoryId: string; onDone: ()
 
 function EditProductForm({ product, onDone }: { product: Product; onDone: () => void }) {
   const { update } = useData()
+  const { isDark } = useTheme()
   const [prductId, setProductId] = useState(product.id)
   const [name, setName] = useState(product.name)
   const [quantity, setQuantity] = useState(product.quantity.toString())
@@ -120,23 +139,32 @@ function EditProductForm({ product, onDone }: { product: Product; onDone: () => 
     }
   }
 
+  const inputProps = {
+    bg: isDark ? 'gray.700' : 'white',
+    color: isDark ? 'gray.300' : 'gray.800',
+    borderColor: isDark ? 'gray.600' : 'gray.200',
+    _placeholder: { color: isDark ? 'gray.400' : 'gray.400' },
+  }
+
   return (
     <HStack mt={2}>
       <form onSubmit={(e) => { e.preventDefault(); submit() }} style={{ display: 'contents' }}>
-      <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Produktname" size="sm" />
-      <Input value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="Anzahl" size="sm" w="80px" />
-      <Input value={buyPrice} onKeyDown={(e) => e.key === 'Enter' && submit()} onChange={(e) => setBuyPrice(e.target.value)} placeholder="Preis €" size="sm" w="90px" />
-      <Button size="sm" onClick={submit} loading={loading}>Änderungen speichern</Button>
+        <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Produktname" size="sm" {...inputProps} />
+        <Input value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="Anzahl" size="sm" w="80px" {...inputProps} />
+        <Input value={buyPrice} onKeyDown={(e) => e.key === 'Enter' && submit()} onChange={(e) => setBuyPrice(e.target.value)} placeholder="Preis €" size="sm" w="90px" {...inputProps} />
+        <Button size="sm" onClick={submit} loading={loading}>Änderungen speichern</Button>
       </form>
     </HStack>
   )
 }
+
 // ─── Produktzeile ─────────────────────────────────────────────────────────────
 
 function ProductRow({ product }: { product: Product }) {
   const { update, remove } = useData()
   const [loading, setLoading] = useState(false)
   const [editing, setEditing] = useState(false)
+  const { isDark } = useTheme()
 
   async function changeQuantity(delta: number) {
     const newQty = Math.max(0, product.quantity + delta)
@@ -156,16 +184,18 @@ function ProductRow({ product }: { product: Product }) {
         <HStack gap={2}>
           {isAdmin() && (
             <IconButton
+              color={isDark ? "white" : ""}
               aria-label="minus"
               size="xs"
               variant="outline"
               onClick={() => changeQuantity(-1)}
               disabled={product.quantity === 0 || loading}
           >−</IconButton>)}
-          <Badge colorPalette={product.quantity === 0 ? 'red' : product.quantity < 5 ? 'orange' : 'green'}>
+          <Badge justifyContent={"center"} minW="8" display={"flex"} colorPalette={product.quantity === 0 ? 'red' : product.quantity < 5 ? 'orange' : 'green'}>
             {product.quantity}
           </Badge>
           {isAdmin()&&(<IconButton
+            color={isDark ? "white" : ""}
             aria-label="plus"
             size="xs"
             variant="outline"
@@ -177,20 +207,12 @@ function ProductRow({ product }: { product: Product }) {
       <Table.Cell>{formatPrice(product.buyPrice)}</Table.Cell>
       <Table.Cell>{formatPrice((product.buyPrice ?? 0) * product.quantity)}</Table.Cell>
       {isAdmin() && (<Table.Cell>
-        <Button
-          size="xs"
-          variant="ghost"
-          onClick={() => setEditing(true)}>
+        <Button size="xs" variant="ghost" onClick={() => setEditing(true)}>
           <FaPen />
         </Button>
       </Table.Cell>)}
       {isAdmin() && (<Table.Cell>
-        <Button
-          size="xs"
-          colorPalette="red"
-          variant="ghost"
-          onClick={() => remove('product', product.id)}
-        >
+        <Button size="xs" colorPalette="red" variant="ghost" onClick={() => remove('product', product.id)}>
           <FaTrashAlt />
         </Button>
       </Table.Cell>)}
@@ -202,18 +224,19 @@ function ProductRow({ product }: { product: Product }) {
 
 function CategoryBlock({ category, products }: { category: Category; products: Product[] }) {
   const { remove } = useData()
+  const { isDark } = useTheme()
   const [showAddProduct, setShowAddProduct] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
 
   const totalValue = products.reduce((sum, p) => sum + (p.buyPrice ?? 0) * p.quantity, 0)
 
   return (
-    <Box bg="white" rounded="lg" shadow="sm" p={4} mb={4} overflowX="auto">
+    <Box bg={isDark ? 'gray.700' : 'white'} rounded="lg" shadow="sm" p={4} mb={4} overflowX="auto">
       <Flex justify="space-between" align="center" mb={collapsed ? 0 : 3}>
         <HStack gap={2} cursor="pointer" onClick={() => setCollapsed((v) => !v)} flex={1}>
           <Text fontSize="xs" color="gray.400">{collapsed ? '▶' : '▼'}</Text>
           <Heading size="sm">{category.name}</Heading>
-          <Text fontSize="sm" color="gray.500">
+          <Text fontSize="sm" color={isDark ? 'gray.400' : 'gray.400'}>
             {formatPrice(totalValue)} · {products.length} Produkte
           </Text>
         </HStack>
@@ -225,13 +248,20 @@ function CategoryBlock({ category, products }: { category: Category; products: P
       </Flex>
 
       {!collapsed && products.length > 0 && (
-        <Table.Root size="sm" mb={2}>
-          <Table.Header>
+        <Table.Root
+          size="sm"
+          mb={2}
+          color={isDark ? 'gray.300' : 'gray.700'}
+          css={{ '--chakra-colors-bg': 'transparent' }}
+        >
+          <Table.Header bg={isDark ? 'gray.700' : 'white'} >
             <Table.Row>
-              <Table.ColumnHeader>Name</Table.ColumnHeader>
-              <Table.ColumnHeader>Bestand</Table.ColumnHeader>
-              <Table.ColumnHeader>Einkaufspreis</Table.ColumnHeader>
-              <Table.ColumnHeader>Gesamtwert</Table.ColumnHeader>
+              <Table.ColumnHeader color={isDark ? 'white' : 'black'}>Name</Table.ColumnHeader>
+              <Table.ColumnHeader color={isDark ? 'white' : 'black'}>Bestand</Table.ColumnHeader>
+              <Table.ColumnHeader color={isDark ? 'white' : 'black'}>Einkaufspreis</Table.ColumnHeader>
+              <Table.ColumnHeader color={isDark ? 'white' : 'black'}>Gesamtwert</Table.ColumnHeader>
+              {isAdmin() && <Table.ColumnHeader color={isDark ? 'white' : 'black'}> Bearbeiten </Table.ColumnHeader>}
+              {isAdmin() && <Table.ColumnHeader color={isDark ? 'white' : 'black'}> Löschen </Table.ColumnHeader>}
               <Table.ColumnHeader />
             </Table.Row>
           </Table.Header>
@@ -243,7 +273,7 @@ function CategoryBlock({ category, products }: { category: Category; products: P
 
       {!collapsed && isAdmin() && (showAddProduct
         ? <AddProductForm categoryId={category.id} onDone={() => setShowAddProduct(false)} />
-        : <Button size="xs" variant="ghost" onClick={() => setShowAddProduct(true)}>+ Produkt hinzufügen</Button>
+        : <Button color={isDark ? "gray.200" : ""} size="xs" variant="ghost" onClick={() => setShowAddProduct(true)}>+ Produkt hinzufügen</Button>
       )}
     </Box>
   )
@@ -253,6 +283,7 @@ function CategoryBlock({ category, products }: { category: Category; products: P
 
 export default function InventarPage() {
   const { data, loading } = useData()
+  const { isDark } = useTheme()
   const [showAddCategory, setShowAddCategory] = useState(false)
 
   if (loading) return <Spinner />
@@ -261,19 +292,21 @@ export default function InventarPage() {
     <Box>
       <Flex justify="space-between" align="center" mb={6}>
         <Heading>Inventar</Heading>
-        {isAdmin()&&(<Button size="sm" onClick={() => setShowAddCategory((v) => !v)}>
-          {showAddCategory ? 'Abbrechen' : '+ Kategorie'}
-        </Button>)}
+        {isAdmin() && (
+          <Button size="sm" onClick={() => setShowAddCategory((v) => !v)}>
+            {showAddCategory ? 'Abbrechen' : '+ Kategorie'}
+          </Button>
+        )}
       </Flex>
 
       {showAddCategory && (
-        <Box bg="white" p={4} rounded="lg" shadow="sm" mb={4}>
+        <Box bg={isDark ? 'gray.700' : 'white'} p={4} rounded="lg" shadow="sm" mb={4}>
           <AddCategoryForm onDone={() => setShowAddCategory(false)} />
         </Box>
       )}
 
       {data.categories.length === 0 && !showAddCategory && (
-        <Text color="gray.500">Noch keine Kategorien. Füge eine hinzu.</Text>
+        <Text color={isDark ? 'gray.400' : 'gray.500'}>Noch keine Kategorien. Füge eine hinzu.</Text>
       )}
 
       {data.categories.map((cat) => (
