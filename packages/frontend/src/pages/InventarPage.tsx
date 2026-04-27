@@ -184,24 +184,31 @@ function ProductRow({ product }: { product: Product }) {
         <HStack gap={2}>
           {isAdmin() && (
             <IconButton
-              color={isDark ? "white" : ""}
               aria-label="minus"
               size="xs"
-              variant="outline"
+              variant="ghost"
+              bg={isDark ? 'gray.600' : 'gray.100'}
+              _hover={{ bg: isDark ? 'gray.500' : 'gray.200' }}
+              color={isDark ? 'gray.200' : 'gray.700'}
               onClick={() => changeQuantity(-1)}
               disabled={product.quantity === 0 || loading}
-          >−</IconButton>)}
-          <Badge justifyContent={"center"} minW="8" display={"flex"} colorPalette={product.quantity === 0 ? 'red' : product.quantity < 5 ? 'orange' : 'green'}>
+            >−</IconButton>
+          )}
+          <Badge justifyContent="center" minW="8" display="flex" colorPalette={product.quantity === 0 ? 'red' : product.quantity < 5 ? 'orange' : 'green'}>
             {product.quantity}
           </Badge>
-          {isAdmin()&&(<IconButton
-            color={isDark ? "white" : ""}
-            aria-label="plus"
-            size="xs"
-            variant="outline"
-            onClick={() => changeQuantity(1)}
-            disabled={loading}
-          >+</IconButton>)}
+          {isAdmin() && (
+            <IconButton
+              aria-label="plus"
+              size="xs"
+              variant="ghost"
+              bg={isDark ? 'gray.600' : 'gray.100'}
+              _hover={{ bg: isDark ? 'gray.500' : 'gray.200' }}
+              color={isDark ? 'gray.200' : 'gray.700'}
+              onClick={() => changeQuantity(1)}
+              disabled={loading}
+            >+</IconButton>
+          )}
         </HStack>
       </Table.Cell>
       <Table.Cell>{formatPrice(product.buyPrice)}</Table.Cell>
@@ -293,7 +300,14 @@ export default function InventarPage() {
       <Flex justify="space-between" align="center" mb={6}>
         <Heading>Inventar</Heading>
         {isAdmin() && (
-          <Button size="sm" onClick={() => setShowAddCategory((v) => !v)}>
+          <Button
+            size="sm"
+            variant="ghost"
+            bg={isDark ? 'gray.600' : 'gray.100'}
+            _hover={{ bg: isDark ? 'gray.500' : 'gray.200' }}
+            color={isDark ? 'gray.200' : 'gray.700'}
+            onClick={() => setShowAddCategory((v) => !v)}
+          >
             {showAddCategory ? 'Abbrechen' : '+ Kategorie'}
           </Button>
         )}

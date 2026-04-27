@@ -106,6 +106,13 @@ export default function EinstellungenPage() {
     }
   }
 
+  const btnProps = {
+    variant: 'ghost' as const,
+    bg: isDark ? 'gray.600' : 'gray.100',
+    _hover: { bg: isDark ? 'gray.500' : 'gray.200' },
+    color: isDark ? 'gray.200' : 'gray.700',
+  }
+
   return (
     <Box maxW="600px" color={isDark ? "gray.100" : "black"}>
       <Heading mb={6}>Einstellungen</Heading>
@@ -125,19 +132,10 @@ export default function EinstellungenPage() {
                 </HStack>
                 {u.id !== userId && (
                   <HStack gap={2}>
-                    <Button
-                      size="xs"
-                      variant="outline"
-                      onClick={() => handleToggleRole(u)}
-                    >
+                    <Button size="xs" onClick={() => handleToggleRole(u)} {...btnProps}>
                       {u.role === 'ADMIN' ? 'zu Member' : 'zu Admin'}
                     </Button>
-                    <Button
-                      size="xs"
-                      colorPalette="red"
-                      variant="outline"
-                      onClick={() => handleDeleteUser(u.id)}
-                    >
+                    <Button size="xs" colorPalette="red" variant="ghost" onClick={() => handleDeleteUser(u.id)}>
                       Löschen
                     </Button>
                   </HStack>
@@ -151,11 +149,11 @@ export default function EinstellungenPage() {
           {/* ─── Invite erstellen ────────────────────────────────────── */}
           <Heading size="md" mb={3}>Einladungslink erstellen</Heading>
           <Stack gap={3} mb={6}>
-            <Text fontSize="sm" color="gray.600">
+            <Text fontSize="sm" color={isDark ? 'gray.400' : 'gray.600'}>
               Der Link ist 7 Tage gültig und kann nur einmal verwendet werden.
               Der neue Nutzer erhält automatisch Zugriff auf alle verschlüsselten Daten.
             </Text>
-            <Button onClick={handleCreateInvite} loading={inviteLoading} w="fit-content">
+            <Button onClick={handleCreateInvite} loading={inviteLoading} w="fit-content" {...btnProps}>
               Neuen Invite generieren
             </Button>
             {inviteError && <Text color="red.500" fontSize="sm">{inviteError}</Text>}
@@ -166,7 +164,7 @@ export default function EinstellungenPage() {
                     <Input value={inviteLink} readOnly fontSize="xs" />
                   </ClipboardInput>
                   <ClipboardTrigger asChild>
-                    <Button size="sm" variant="outline">
+                    <Button size="sm" {...btnProps}>
                       <ClipboardIndicator copied="Kopiert!" />
                     </Button>
                   </ClipboardTrigger>
@@ -184,24 +182,15 @@ export default function EinstellungenPage() {
       <Stack gap={3} maxW="360px">
         <Field.Root>
           <Field.Label>Aktuelles Passwort</Field.Label>
-          <Input
-            type="password"
-            value={changePasswordOld}
-            onChange={e => setChangePasswordOld(e.target.value)}
-          />
+          <Input type="password" value={changePasswordOld} onChange={e => setChangePasswordOld(e.target.value)} />
         </Field.Root>
         <Field.Root>
           <Field.Label>Neues Passwort</Field.Label>
-          <Input
-            type="password"
-            value={changePasswordNew}
-            onChange={e => setChangePasswordNew(e.target.value)}
-            placeholder="Mindestens 12 Zeichen"
-          />
+          <Input type="password" value={changePasswordNew} onChange={e => setChangePasswordNew(e.target.value)} placeholder="Mindestens 12 Zeichen" />
         </Field.Root>
         {changePasswordError && <Text color="red.500" fontSize="sm">{changePasswordError}</Text>}
         {changePasswordSuccess && <Text color="green.500" fontSize="sm">Passwort erfolgreich geändert.</Text>}
-        <Button onClick={handleChangePassword} loading={changePasswordLoading} w="fit-content">
+        <Button onClick={handleChangePassword} loading={changePasswordLoading} w="fit-content" {...btnProps}>
           Passwort ändern
         </Button>
       </Stack>
