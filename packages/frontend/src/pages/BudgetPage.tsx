@@ -8,6 +8,7 @@ import { useData } from '../context/DataContext'
 import ProductAutocomplete from '../components/ProductAutocomplete'
 import { useAuth } from '../context/AuthContext'
 import { FaTrash } from 'react-icons/fa'
+import { useTheme } from '../context/ThemeContext'
 
 // ─── Hilfsfunktionen ──────────────────────────────────────────────────────────
 
@@ -53,6 +54,7 @@ function AddTransactionForm({
   const [productId, setProductId] = useState('')
   const [creditId, setCreditId] = useState('')
   const [loading, setLoading] = useState(false)
+  const { isDark } = useTheme()
 
   async function submit() {
     if (!description.trim() || !amount) return
@@ -93,6 +95,13 @@ function AddTransactionForm({
     }
   }
 
+  const inputProps = {
+    bg: isDark ? 'gray.700' : 'white',
+    color: isDark ? 'gray.300' : 'gray.800',
+    borderColor: isDark ? 'gray.600' : 'gray.200',
+    _placeholder: { color: isDark ? 'gray.400' : 'gray.400' },
+  }
+
   return (
     <HStack mt={3} gap={2} flexWrap="wrap">
       <Input
@@ -101,6 +110,7 @@ function AddTransactionForm({
         onChange={(e) => setDate(e.target.value)}
         size="sm"
         w="140px"
+        {...inputProps}
       />
       <ProductAutocomplete
         products={type === 'INCOME' ? products : []}
@@ -114,13 +124,21 @@ function AddTransactionForm({
           placeholder="Anz."
           size="sm"
           w="60px"
+          {...inputProps}
         />
       )}
       {credits.length > 0 && type === 'INCOME' && (
         <select
           value={creditId}
           onChange={(e) => setCreditId(e.target.value)}
-          style={{ fontSize: '14px', padding: '4px 8px', borderRadius: '6px', border: '1px solid #e2e8f0' }}
+          style={{
+            fontSize: '14px',
+            padding: '4px 8px',
+            borderRadius: '6px',
+            border: `1px solid ${isDark ? '#4a5568' : '#e2e8f0'}`,
+            background: isDark ? '#2d3748' : 'white',
+            color: isDark ? '#a0aec0' : 'inherit',
+          }}
         >
           <option value="">Kein Kredit</option>
           {credits.map((c) => (
@@ -135,6 +153,7 @@ function AddTransactionForm({
         size="sm"
         w="100px"
         onKeyDown={(e) => e.key === 'Enter' && submit()}
+        {...inputProps}
       />
       <Button size="sm" onClick={submit} loading={loading}>+</Button>
     </HStack>
@@ -146,11 +165,12 @@ function AddTransactionForm({
 function TransactionRow({ tx, products }: { tx: Transaction; products: Product[] }) {
   const { remove } = useData()
   const product = products.find((p) => p.id === tx.productId)
+  const { isDark } = useTheme()
   
 
   return (
     <Table.Row>
-      <Table.Cell fontSize="sm" color="gray.600">{tx.date}</Table.Cell>
+      <Table.Cell fontSize="sm">{tx.date}</Table.Cell>
       <Table.Cell>
         <Text fontSize="sm">{tx.description}</Text>
         {product && <Badge size="sm" colorPalette="blue" ml={1}>{product.name}</Badge>}
@@ -175,6 +195,7 @@ function CashBlock({ month, year, transactions }: { month: number; year: number;
   const [editing, setEditing] = useState(false)
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const { isDark } = useTheme()
 
   const monthlyCash = data.monthlyCashes.find((m) => m.month === month && m.year === year)
 
@@ -206,9 +227,9 @@ function CashBlock({ month, year, transactions }: { month: number; year: number;
   }
 
   return (
-    <HStack gap={6} bg="white" p={4} rounded="lg" shadow="sm" mb={6} flexWrap="wrap">
+    <HStack gap={6} bg={isDark ? "gray.700" : "white"} p={4} rounded="lg" shadow="sm" mb={6} flexWrap="wrap">
       <VStack align="start" gap={0}>
-        <Text fontSize="xs" color="gray.500">Cash letzter Monat</Text>
+        <Text fontSize="xs" color={isDark ? "gray.400" : "gray.500"}>Cash letzter Monat</Text>
         {editing ? (
           <HStack>
             <Input
@@ -229,20 +250,20 @@ function CashBlock({ month, year, transactions }: { month: number; year: number;
         )}
       </VStack>
       <VStack align="start" gap={0}>
-        <Text fontSize="xs" color="gray.500">Cash jetzt</Text>
+        <Text fontSize="xs" color={isDark ? "gray.400" : "gray.500"}>Cash jetzt</Text>
         <Text fontWeight="bold">{formatEur(cashNow)}</Text>
       </VStack>
       <VStack align="start" gap={0}>
-        <Text fontSize="xs" color="gray.500">Plus/Minus</Text>
-        <Text fontWeight="bold" color={plus >= 0 ? 'green.600' : 'red.600'}>{formatEur(plus)}</Text>
+        <Text fontSize="xs" color={isDark ? "gray.400" : "gray.500"}>Plus/Minus</Text>
+        <Text fontWeight="bold" color={plus >= 0 ? isDark ? "green.400" : "green.600" : isDark ? "red.400" : "red.600"}>{formatEur(plus)}</Text>
       </VStack>
       <VStack align="start" gap={0}>
-        <Text fontSize="xs" color="gray.500">Einnahmen</Text>
-        <Text fontWeight="bold" color="green.600">{formatEur(totalIncome)}</Text>
+        <Text fontSize="xs" color={isDark ? "gray.400" : "gray.500"}>Einnahmen</Text>
+        <Text fontWeight="bold" color={isDark ? "green.400" : "green.600"}>{formatEur(totalIncome)}</Text>
       </VStack>
       <VStack align="start" gap={0}>
-        <Text fontSize="xs" color="gray.500">Ausgaben</Text>
-        <Text fontWeight="bold" color="red.600">{formatEur(totalExpense)}</Text>
+        <Text fontSize="xs" color={isDark ? "gray.400" : "gray.500"}>Ausgaben</Text>
+        <Text fontWeight="bold" color={isDark ? "red.400" : "red.600"}>{formatEur(totalExpense)}</Text>
       </VStack>
     </HStack>
   )
@@ -258,6 +279,7 @@ export default function BudgetPage() {
   const now = new Date()
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [year, setYear] = useState(now.getFullYear())
+  const { isDark } = useTheme()
 
   const transactions = useMemo(
     () => data.transactions.filter((t) => {
@@ -286,14 +308,14 @@ export default function BudgetPage() {
   return (
     <Box>
       {/* Monat Navigation */}
-      <Flex align="center" gap={4} mb={6}>
+      <Flex align="center" gap={4} mb={6} color={isDark ? "gray.400" : "gray.600"}>
         <Heading>Budget</Heading>
         <HStack>
-          <Button size="sm" variant="outline" onClick={prevMonth}>←</Button>
+          <Button size="sm" variant="outline" color={isDark ? "gray.400": "gray.600"} onClick={prevMonth}>←</Button>
           <Text fontWeight="semibold" minW="140px" textAlign="center">
             {MONTHS[month - 1]} {year}
           </Text>
-          <Button size="sm" variant="outline" onClick={nextMonth}>→</Button>
+          <Button size="sm" variant="outline" color={isDark ? "gray.400" : "gray.600"} onClick={nextMonth}>→</Button>
         </HStack>
       </Flex>
 
@@ -304,11 +326,15 @@ export default function BudgetPage() {
       <Flex gap={6} flexDir={{ base: 'column', lg: 'row' }}>
 
         {/* Einnahmen */}
-        <Box flex={1} bg="white" rounded="lg" shadow="sm" p={4} overflowX="auto">
-          <Heading size="sm" color="green.600" mb={3}>
+        <Box flex={1} bg={isDark ? "gray.700" : "white"} rounded="lg" shadow="sm" p={4} overflowX="auto">
+          <Heading size="sm" color={isDark ? "green.400" : "green.600"} mb={3}>
             Einnahmen — {formatEur(income.reduce((s, t) => s + t.amountCents, 0))}
           </Heading>
-          <Table.Root size="sm">
+          <Table.Root 
+            size="sm"
+            color={isDark ? "gray.400" : "gray.600"}
+            css={{ '--chakra-colors-bg': 'transparent' }}
+          >
             <Table.Header>
               <Table.Row>
                 <Table.ColumnHeader>Datum</Table.ColumnHeader>
@@ -336,11 +362,15 @@ export default function BudgetPage() {
         </Box>
 
         {/* Ausgaben */}
-        <Box flex={1} bg="white" rounded="lg" shadow="sm" p={4} overflowX="auto">
-          <Heading size="sm" color="red.600" mb={3}>
+        <Box flex={1} bg={isDark ? "gray.700" : "white"} rounded="lg" shadow="sm" p={4} overflowX="auto">
+          <Heading size="sm" color={isDark ? "red.400" : "red.600"} mb={3}>
             Ausgaben — {formatEur(expenses.reduce((s, t) => s + t.amountCents, 0))}
           </Heading>
-          <Table.Root size="sm">
+           <Table.Root 
+            size="sm"
+            color={isDark ? "gray.400" : "gray.600"}
+            css={{ '--chakra-colors-bg': 'transparent' }}
+          >
             <Table.Header>
               <Table.Row>
                 <Table.ColumnHeader>Datum</Table.ColumnHeader>

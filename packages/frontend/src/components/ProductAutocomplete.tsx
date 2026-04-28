@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Box, Input, Text } from '@chakra-ui/react'
 import type { Product } from '@hydra/shared'
+import { useTheme } from '../context/ThemeContext'
 
 type Props = {
   products: Product[]
@@ -10,6 +11,7 @@ type Props = {
 }
 
 export default function ProductAutocomplete({ products, value, onChange, placeholder }: Props) {
+  const { isDark } = useTheme()
   const [open, setOpen] = useState(false)
   const [highlighted, setHighlighted] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -65,6 +67,10 @@ export default function ProductAutocomplete({ products, value, onChange, placeho
         onKeyDown={handleKeyDown}
         placeholder={placeholder ?? 'Beschreibung'}
         size="sm"
+        bg={isDark ? 'gray.700' : 'white'}
+        color={isDark ? 'gray.300' : 'gray.800'}
+        borderColor={isDark ? 'gray.600' : 'gray.200'}
+        _placeholder={{ color: isDark ? 'gray.400' : 'gray.400' }}
       />
       {open && suggestions.length > 0 && (
         <Box
@@ -73,9 +79,9 @@ export default function ProductAutocomplete({ products, value, onChange, placeho
           left={0}
           right={0}
           zIndex={100}
-          bg="white"
+          bg={isDark ? 'gray.700' : 'white'}
           border="1px solid"
-          borderColor="gray.200"
+          borderColor={isDark ? 'gray.600' : 'gray.200'}
           rounded="md"
           shadow="md"
           mt={1}
@@ -88,13 +94,13 @@ export default function ProductAutocomplete({ products, value, onChange, placeho
               px={3}
               py={2}
               cursor="pointer"
-              bg={i === highlighted ? 'blue.50' : 'white'}
-              _hover={{ bg: 'blue.50' }}
+              bg={i === highlighted ? isDark ? 'blue.900' : 'blue.50' : 'transparent'}
+              _hover={{ bg: isDark ? 'blue.900' : 'blue.50' }}
               onMouseDown={() => select(p)}
               onMouseEnter={() => setHighlighted(i)}
             >
-              <Text fontSize="sm">{p.name}</Text>
-              <Text fontSize="xs" color="gray.400">Bestand: {p.quantity}</Text>
+              <Text fontSize="sm" color={isDark ? 'gray.300' : 'gray.800'}>{p.name}</Text>
+              <Text fontSize="xs" color={isDark ? 'gray.500' : 'gray.400'}>Bestand: {p.quantity}</Text>
             </Box>
           ))}
         </Box>

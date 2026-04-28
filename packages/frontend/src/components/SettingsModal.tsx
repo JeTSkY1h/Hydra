@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import {
-  Button, Dialog, Field, Input, Portal, Text, Stack,
+  Button, Dialog, Field, Input, Portal, Stack,
 } from '@chakra-ui/react'
 import { IoSettingsOutline } from 'react-icons/io5'
 import type { AppSettings } from '@hydra/shared'
 import { useData } from '../context/DataContext'
+import { useTheme } from '../context/ThemeContext'
 
 export default function SettingsModal() {
   const { data, create, update } = useData()
+  const { isDark } = useTheme()
   const [open, setOpen] = useState(false)
   const [memberCount, setMemberCount] = useState('')
   const [loading, setLoading] = useState(false)
@@ -33,15 +35,16 @@ export default function SettingsModal() {
     }
   }
 
+  const btnProps = {
+    variant: 'ghost' as const,
+    bg: isDark ? 'gray.600' : 'gray.100',
+    _hover: { bg: isDark ? 'gray.500' : 'gray.200' },
+    color: isDark ? 'gray.200' : 'gray.700',
+  }
+
   return (
     <>
-      <Button
-        variant="ghost"
-        color="gray.400"
-        size="sm"
-        onClick={handleOpen}
-        aria-label="Einstellungen"
-      >
+      <Button variant="ghost" color="gray.400" size="sm" onClick={handleOpen} aria-label="Einstellungen">
         <IoSettingsOutline size={16} />
       </Button>
 
@@ -72,8 +75,8 @@ export default function SettingsModal() {
                 </Stack>
               </Dialog.Body>
               <Dialog.Footer>
-                <Button variant="outline" onClick={() => setOpen(false)}>Abbrechen</Button>
-                <Button onClick={save} loading={loading}>Speichern</Button>
+                <Button onClick={() => setOpen(false)} {...btnProps}>Abbrechen</Button>
+                <Button onClick={save} loading={loading} {...btnProps}>Speichern</Button>
               </Dialog.Footer>
             </Dialog.Content>
           </Dialog.Positioner>

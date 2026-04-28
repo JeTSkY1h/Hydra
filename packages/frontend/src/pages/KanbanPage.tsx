@@ -16,6 +16,7 @@ import {
 } from '@chakra-ui/react'
 import { FaPencil, FaTrash } from 'react-icons/fa6'
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../context/ThemeContext'
 import { apiGet, apiPost, apiPut, apiDelete } from '../lib/api'
 import { encrypt, decrypt } from '../lib/crypto'
 import type { Task, KanbanColumn } from '@hydra/shared'
@@ -58,6 +59,7 @@ function TaskCard({
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: task.id })
   const { userId, role } = useAuth()
+  const { isDark } = useTheme()
   const isAdmin = role === 'ADMIN'
   const colIndex = COLUMNS.findIndex(c => c.id === task.column)
 
@@ -65,6 +67,13 @@ function TaskCard({
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.4 : 1,
+  }
+
+  const btnProps = {
+    variant: 'ghost' as const,
+    bg: isDark ? 'gray.600' : 'gray.100',
+    _hover: { bg: isDark ? 'gray.500' : 'gray.200' },
+    color: isDark ? 'gray.200' : 'gray.700',
   }
 
   function handleAssignChange(e: React.ChangeEvent<HTMLSelectElement>) {
@@ -91,14 +100,13 @@ function TaskCard({
     <Box
       ref={setNodeRef}
       style={style}
-      bg="white"
+      bg={isDark ? 'gray.700' : 'white'}
       rounded="md"
       shadow="sm"
       p={3}
       borderLeft="3px solid"
       borderColor={`${COLUMNS[colIndex]?.color ?? 'gray'}.300`}
     >
-      {/* Drag-Handle */}
       <Box {...attributes} {...listeners} cursor="grab" _active={{ cursor: 'grabbing' }}>
         <HStack justify="space-between" mb={1}>
           <Text fontWeight="medium" fontSize="sm">{task.title}</Text>
@@ -111,7 +119,7 @@ function TaskCard({
         {task.description && (
           <Text
             fontSize="xs"
-            color="gray.500"
+            color={isDark ? 'gray.400' : 'gray.500'}
             mb={2}
             style={{ display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
           >
@@ -119,21 +127,16 @@ function TaskCard({
           </Text>
         )}
         {task.deadline && (
-          <Text fontSize="xs" color="orange.600" mb={1}>
+          <Text fontSize="xs" color="orange.400" mb={1}>
             Fällig: {new Date(task.deadline).toLocaleDateString('de-DE')}
           </Text>
         )}
       </Box>
 
-      {/* Zuweisung */}
       <Box mt={2}>
         {isAdmin && users.length > 0 ? (
           <NativeSelect.Root size="xs">
-            <NativeSelect.Field
-              value={task.assigneeId ?? ''}
-              onChange={handleAssignChange}
-              fontSize="xs"
-            >
+            <NativeSelect.Field value={task.assigneeId ?? ''} onChange={handleAssignChange} fontSize="xs">
               <option value="">Nicht zugewiesen</option>
               {users.map(u => (
                 <option key={u.id} value={u.id}>{u.name}</option>
@@ -144,23 +147,23 @@ function TaskCard({
         ) : (
           <Button
             size="xs"
-            variant={task.assigneeId === userId ? 'solid' : 'outline'}
-            colorPalette={task.assigneeId === userId ? 'blue' : 'gray'}
             onClick={handleAssignSelf}
+            {...btnProps}
+            bg={task.assigneeId === userId ? isDark ? 'blue.800' : 'blue.100' : btnProps.bg}
+            color={task.assigneeId === userId ? isDark ? 'blue.200' : 'blue.700' : btnProps.color}
           >
             {task.assigneeName ?? 'Mir zuweisen'}
           </Button>
         )}
       </Box>
 
-      {/* Navigation + Aktionen */}
       <HStack justify="space-between" mt={2}>
         <HStack gap={1}>
           {colIndex > 0 && (
-            <Button size="xs" variant="ghost" px={1} onClick={() => onMove(task, COLUMNS[colIndex - 1].id)}>←</Button>
+            <Button size="xs" px={1} onClick={() => onMove(task, COLUMNS[colIndex - 1].id)} {...btnProps}>←</Button>
           )}
           {colIndex < COLUMNS.length - 1 && (
-            <Button size="xs" variant="ghost" px={1} onClick={() => onMove(task, COLUMNS[colIndex + 1].id)}>→</Button>
+            <Button size="xs" px={1} onClick={() => onMove(task, COLUMNS[colIndex + 1].id)} {...btnProps}>→</Button>
           )}
         </HStack>
         <HStack gap={1}>
@@ -190,13 +193,15 @@ function KanbanColumnView({
   users: UserOption[]
   activeId: string | null
 }) {
+  const { isDark } = useTheme()
+
   return (
     <Box flex={1} minW="230px" maxW="320px">
       <HStack mb={3}>
         <Badge colorPalette={column.color} size="md">{column.label}</Badge>
         <Text fontSize="xs" color="gray.400">{tasks.length}</Text>
       </HStack>
-      <Box bg="gray.100" rounded="lg" p={2} minH="200px">
+      <Box bg={isDark ? 'gray.800' : 'gray.100'} rounded="lg" p={2} minH="200px">
         <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
           <VStack gap={2} align="stretch">
             {tasks.map(task => (
@@ -221,22 +226,27 @@ function KanbanColumnView({
 // ─── Aufgabe bearbeiten ───────────────────────────────────────────────────────
 
 function EditTaskModal({
-  task,
-  categories,
-  onSave,
-  onClose,
+  task, categories, onSave, onClose,
 }: {
   task: Task
   categories: string[]
   onSave: (updated: Task) => Promise<void>
   onClose: () => void
 }) {
-  const [title, setTitle]           = useState(task.title)
+  const { isDark } = useTheme()
+  const [title, setTitle]             = useState(task.title)
   const [description, setDescription] = useState(task.description ?? '')
-  const [deadline, setDeadline]     = useState(task.deadline ?? '')
-  const [category, setCategory]     = useState(task.category ?? '')
-  const [customCat, setCustomCat]   = useState('')
-  const [loading, setLoading]       = useState(false)
+  const [deadline, setDeadline]       = useState(task.deadline ?? '')
+  const [category, setCategory]       = useState(task.category ?? '')
+  const [customCat, setCustomCat]     = useState('')
+  const [loading, setLoading]         = useState(false)
+
+  const btnProps = {
+    variant: 'ghost' as const,
+    bg: isDark ? 'gray.600' : 'gray.100',
+    _hover: { bg: isDark ? 'gray.500' : 'gray.200' },
+    color: isDark ? 'gray.200' : 'gray.700',
+  }
 
   async function handleSave() {
     if (!title.trim()) return
@@ -273,13 +283,7 @@ function EditTaskModal({
                 </Field.Root>
                 <Field.Root>
                   <Field.Label>Beschreibung</Field.Label>
-                  <Textarea
-                    value={description}
-                    onChange={e => setDescription(e.target.value)}
-                    size="sm"
-                    rows={6}
-                    placeholder="Beschreibung (optional)"
-                  />
+                  <Textarea value={description} onChange={e => setDescription(e.target.value)} size="sm" rows={6} placeholder="Beschreibung (optional)" />
                 </Field.Root>
                 <Field.Root>
                   <Field.Label>Fälligkeitsdatum</Field.Label>
@@ -302,8 +306,8 @@ function EditTaskModal({
               </VStack>
             </Dialog.Body>
             <Dialog.Footer>
-              <Button variant="ghost" onClick={onClose}>Abbrechen</Button>
-              <Button onClick={handleSave} loading={loading}>Speichern</Button>
+              <Button onClick={onClose} {...btnProps}>Abbrechen</Button>
+              <Button onClick={handleSave} loading={loading} {...btnProps}>Speichern</Button>
             </Dialog.Footer>
           </Dialog.Content>
         </Dialog.Positioner>
@@ -314,13 +318,11 @@ function EditTaskModal({
 
 // ─── Neue Aufgabe erstellen ───────────────────────────────────────────────────
 
-function AddTaskForm({
-  categories,
-  onAdd,
-}: {
+function AddTaskForm({ categories, onAdd }: {
   categories: string[]
   onAdd: (title: string, description: string, deadline: string, category: string) => Promise<void>
 }) {
+  const { isDark } = useTheme()
   const [open, setOpen]               = useState(false)
   const [title, setTitle]             = useState('')
   const [description, setDescription] = useState('')
@@ -328,6 +330,13 @@ function AddTaskForm({
   const [category, setCategory]       = useState('')
   const [customCat, setCustomCat]     = useState('')
   const [loading, setLoading]         = useState(false)
+
+  const btnProps = {
+    variant: 'ghost' as const,
+    bg: isDark ? 'gray.600' : 'gray.100',
+    _hover: { bg: isDark ? 'gray.500' : 'gray.200' },
+    color: isDark ? 'gray.200' : 'gray.700',
+  }
 
   function handleClose() {
     setOpen(false)
@@ -348,7 +357,7 @@ function AddTaskForm({
 
   return (
     <>
-      <Button size="sm" onClick={() => setOpen(true)}>+ Neue Aufgabe</Button>
+      <Button size="sm" onClick={() => setOpen(true)} {...btnProps}>+ Neue Aufgabe</Button>
       <Dialog.Root open={open} onOpenChange={(e) => { if (!e.open) handleClose() }}>
         <Portal>
           <Dialog.Backdrop />
@@ -365,13 +374,7 @@ function AddTaskForm({
                   </Field.Root>
                   <Field.Root>
                     <Field.Label>Beschreibung</Field.Label>
-                    <Textarea
-                      value={description}
-                      onChange={e => setDescription(e.target.value)}
-                      size="sm"
-                      rows={6}
-                      placeholder="Beschreibung (optional)"
-                    />
+                    <Textarea value={description} onChange={e => setDescription(e.target.value)} size="sm" rows={6} placeholder="Beschreibung (optional)" />
                   </Field.Root>
                   <Field.Root>
                     <Field.Label>Fälligkeitsdatum</Field.Label>
@@ -394,8 +397,8 @@ function AddTaskForm({
                 </VStack>
               </Dialog.Body>
               <Dialog.Footer>
-                <Button variant="ghost" onClick={handleClose}>Abbrechen</Button>
-                <Button onClick={submit} loading={loading}>Erstellen</Button>
+                <Button onClick={handleClose} {...btnProps}>Abbrechen</Button>
+                <Button onClick={submit} loading={loading} {...btnProps}>Erstellen</Button>
               </Dialog.Footer>
             </Dialog.Content>
           </Dialog.Positioner>
@@ -409,19 +412,18 @@ function AddTaskForm({
 
 export default function KanbanPage() {
   const { token, vaultKey, role } = useAuth()
+  const { isDark } = useTheme()
   const isAdmin = role === 'ADMIN'
 
-  const [tasks, setTasks]     = useState<Task[]>([])
-  const [users, setUsers]     = useState<UserOption[]>([])
-  const [loading, setLoading] = useState(true)
+  const [tasks, setTasks]       = useState<Task[]>([])
+  const [users, setUsers]       = useState<UserOption[]>([])
+  const [loading, setLoading]   = useState(true)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [filterCat, setFilterCat] = useState<string>('')
-  const [mobileCol, setMobileCol] = useState<KanbanColumn>('todo') // '' = alle
+  const [mobileCol, setMobileCol] = useState<KanbanColumn>('todo')
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
-
-  // ─── Laden ─────────────────────────────────────────────────────────────────
 
   useEffect(() => {
     if (!token || !vaultKey) return
@@ -435,8 +437,6 @@ export default function KanbanPage() {
     Promise.all([loadTasks, loadUsers]).finally(() => setLoading(false))
   }, [token, vaultKey, isAdmin])
 
-  // ─── Abgeleitete Werte ─────────────────────────────────────────────────────
-
   const categories = useMemo(() => {
     const cats = tasks.map(t => t.category).filter(Boolean) as string[]
     return [...new Set(cats)].sort()
@@ -447,8 +447,6 @@ export default function KanbanPage() {
     [tasks, filterCat]
   )
 
-  // ─── Hilfsfunktion: Task speichern ─────────────────────────────────────────
-
   async function saveTask(updated: Task) {
     if (!token || !vaultKey) return
     const { id, ...payload } = updated
@@ -456,8 +454,6 @@ export default function KanbanPage() {
     setTasks(prev => prev.map(t => t.id === id ? updated : t))
     await apiPut<RawRecord>(`/tasks/${id}`, { encryptedData }, token)
   }
-
-  // ─── Erstellen ─────────────────────────────────────────────────────────────
 
   const handleAdd = useCallback(async (title: string, description: string, deadline: string, category: string) => {
     if (!token || !vaultKey) return
@@ -473,41 +469,22 @@ export default function KanbanPage() {
     setTasks(prev => [...prev, decryptTask(raw, vaultKey)])
   }, [token, vaultKey])
 
-  // ─── Verschieben ───────────────────────────────────────────────────────────
-
   const handleMove = useCallback(async (task: Task, col: KanbanColumn) => {
     await saveTask({ ...task, column: col })
   }, [token, vaultKey])
 
-  // ─── Zuweisung ─────────────────────────────────────────────────────────────
-
   const handleAssign = useCallback(async (task: Task, assigneeId: string, assigneeName: string) => {
-    await saveTask({
-      ...task,
-      assigneeId:   assigneeId   || undefined,
-      assigneeName: assigneeName || undefined,
-    })
+    await saveTask({ ...task, assigneeId: assigneeId || undefined, assigneeName: assigneeName || undefined })
   }, [token, vaultKey])
 
-  // ─── Bearbeiten ────────────────────────────────────────────────────────────
-
-  const handleEdit = useCallback((task: Task) => {
-    setEditingTask(task)
-  }, [])
-
-  const handleSaveEdit = useCallback(async (updated: Task) => {
-    await saveTask(updated)
-  }, [token, vaultKey])
-
-  // ─── Löschen ───────────────────────────────────────────────────────────────
+  const handleEdit = useCallback((task: Task) => setEditingTask(task), [])
+  const handleSaveEdit = useCallback(async (updated: Task) => { await saveTask(updated) }, [token, vaultKey])
 
   const handleDelete = useCallback(async (id: string) => {
     if (!token) return
     setTasks(prev => prev.filter(t => t.id !== id))
     await apiDelete(`/tasks/${id}`, token)
   }, [token])
-
-  // ─── Drag & Drop ───────────────────────────────────────────────────────────
 
   function handleDragStart(event: DragStartEvent) {
     setActiveId(String(event.active.id))
@@ -529,11 +506,16 @@ export default function KanbanPage() {
     await handleMove(draggedTask, targetColId)
   }
 
-  // ─── Render ────────────────────────────────────────────────────────────────
-
   if (loading) return <Spinner />
 
   const activeTask = activeId ? tasks.find(t => t.id === activeId) : null
+
+  const btnProps = {
+    variant: 'ghost' as const,
+    bg: isDark ? 'gray.600' : 'gray.100',
+    _hover: { bg: isDark ? 'gray.500' : 'gray.200' },
+    color: isDark ? 'gray.200' : 'gray.700',
+  }
 
   return (
     <Box>
@@ -550,17 +532,25 @@ export default function KanbanPage() {
         <AddTaskForm categories={categories} onAdd={handleAdd} />
       </Flex>
 
-      {/* Filter-Leiste */}
       {categories.length > 0 && (
         <HStack mb={4} flexWrap="wrap" gap={2}>
-          <Button size="xs" variant={filterCat === '' ? 'solid' : 'outline'} onClick={() => setFilterCat('')}>
+          <Button
+            size="xs"
+            onClick={() => setFilterCat('')}
+            {...btnProps}
+            bg={filterCat === '' ? isDark ? 'blue.800' : 'blue.100' : btnProps.bg}
+            color={filterCat === '' ? isDark ? 'blue.200' : 'blue.700' : btnProps.color}
+          >
             Alle
           </Button>
           {categories.map(cat => (
             <Button
-              key={cat} size="xs" colorPalette="purple"
-              variant={filterCat === cat ? 'solid' : 'outline'}
+              key={cat}
+              size="xs"
               onClick={() => setFilterCat(cat === filterCat ? '' : cat)}
+              {...btnProps}
+              bg={filterCat === cat ? isDark ? 'purple.900' : 'purple.100' : btnProps.bg}
+              color={filterCat === cat ? isDark ? 'purple.200' : 'purple.700' : btnProps.color}
             >
               {cat}
             </Button>
@@ -570,7 +560,7 @@ export default function KanbanPage() {
 
       {/* ── Mobile: Tab-Leiste + eine Spalte ──────────────────────── */}
       <Box display={{ base: 'block', md: 'none' }}>
-        <HStack mb={3} gap={0} borderBottom="1px solid" borderColor="gray.200" overflowX="auto">
+        <HStack mb={3} gap={0} borderBottom="1px solid" borderColor={isDark ? 'gray.600' : 'gray.200'} overflowX="auto">
           {COLUMNS.map(col => (
             <Button
               key={col.id}
@@ -580,7 +570,7 @@ export default function KanbanPage() {
               borderColor={mobileCol === col.id ? `${col.color}.500` : 'transparent'}
               borderRadius={0}
               flexShrink={0}
-              color={mobileCol === col.id ? `${col.color}.600` : 'gray.500'}
+              color={mobileCol === col.id ? `${col.color}.${isDark ? '400' : '600'}` : isDark ? 'gray.400' : 'gray.500'}
               fontWeight={mobileCol === col.id ? 'semibold' : 'normal'}
               onClick={() => setMobileCol(col.id)}
             >
@@ -608,36 +598,35 @@ export default function KanbanPage() {
 
       {/* ── Desktop: alle Spalten nebeneinander ───────────────────── */}
       <Box display={{ base: 'none', md: 'block' }}>
-      <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-        <Flex gap={4} align="flex-start" overflowX="auto" pb={4}>
-          {COLUMNS.map(col => (
-            <KanbanColumnView
-              key={col.id}
-              column={col}
-              tasks={visibleTasks.filter(t => t.column === col.id)}
-              onMove={handleMove}
-              onDelete={handleDelete}
-              onAssign={handleAssign}
-              onEdit={handleEdit}
-              users={users}
-              activeId={activeId}
-            />
-          ))}
-        </Flex>
+        <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+          <Flex gap={4} align="flex-start" overflowX="auto" pb={4}>
+            {COLUMNS.map(col => (
+              <KanbanColumnView
+                key={col.id}
+                column={col}
+                tasks={visibleTasks.filter(t => t.column === col.id)}
+                onMove={handleMove}
+                onDelete={handleDelete}
+                onAssign={handleAssign}
+                onEdit={handleEdit}
+                users={users}
+                activeId={activeId}
+              />
+            ))}
+          </Flex>
 
-        <DragOverlay>
-          {activeTask && (
-            <Box bg="white" rounded="md" shadow="lg" p={3} opacity={0.9} w="280px">
-              <Text fontWeight="medium" fontSize="sm">{activeTask.title}</Text>
-              {activeTask.description && (
-                <Text fontSize="xs" color="gray.500" mt={1}>{activeTask.description}</Text>
-              )}
-            </Box>
-          )}
-        </DragOverlay>
-      </DndContext>
+          <DragOverlay>
+            {activeTask && (
+              <Box bg={isDark ? 'gray.700' : 'white'} rounded="md" shadow="lg" p={3} opacity={0.9} w="280px">
+                <Text fontWeight="medium" fontSize="sm">{activeTask.title}</Text>
+                {activeTask.description && (
+                  <Text fontSize="xs" color={isDark ? 'gray.400' : 'gray.500'} mt={1}>{activeTask.description}</Text>
+                )}
+              </Box>
+            )}
+          </DragOverlay>
+        </DndContext>
       </Box>
-
     </Box>
   )
 }
