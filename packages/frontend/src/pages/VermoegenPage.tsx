@@ -96,8 +96,8 @@ export default function VermoegenPage() {
   return (
     <Box>
       <Flex justify="space-between" align="center" mb={6}>
-        <Box>
-          <Heading>Vermögen</Heading>
+        <Box> 
+          <Heading color={isDark ? "white" : "gray.900"}>Vermögen</Heading>
           {data.assets.length > 0 && (
             <Text fontSize="sm" color={isDark ? 'gray.400' : 'gray.500'} mt={1}>Gesamt: {formatEur(total)}</Text>
           )}
@@ -124,8 +124,8 @@ export default function VermoegenPage() {
           <Table.Root color={isDark ? 'gray.300' : 'gray.700'} css={{ '--chakra-colors-bg': 'transparent' }}>
             <Table.Header>
               <Table.Row>
-                <Table.ColumnHeader>Bezeichnung</Table.ColumnHeader>
-                <Table.ColumnHeader>Wert</Table.ColumnHeader>
+                <Table.ColumnHeader color={isDark ? "white" : "gray.900"}>Bezeichnung</Table.ColumnHeader>
+                <Table.ColumnHeader color={isDark ? "white" : "gray.900"}>Wert</Table.ColumnHeader>
                 <Table.ColumnHeader />
               </Table.Row>
             </Table.Header>
