@@ -229,13 +229,49 @@ function ProductRow({ product }: { product: Product }) {
 
 // ─── Kategorieblock ───────────────────────────────────────────────────────────
 
-function CategoryBlock({ category, products }: { category: Category; products: Product[] }) {
+function CategoryBlock({
+  category,
+  products,
+  allCategories,
+  allProducts,
+  onMerge,
+}: {
+  category: Category
+  products: Product[]
+  allCategories: Category[]
+  allProducts: Product[]
+  onMerge: (sourceId: string, targetId: string) => Promise<void>
+}) {
   const { remove } = useData()
   const { isDark } = useTheme()
   const [showAddProduct, setShowAddProduct] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
+  const [showMerge, setShowMerge] = useState(false)
+  const [merging, setMerging] = useState(false)
 
   const totalValue = products.reduce((sum, p) => sum + (p.buyPrice ?? 0) * p.quantity, 0)
+  const totalQty = products.reduce((sum, p) => sum + p.quantity, 0)
+  const avgPrice = totalQty > 0 ? totalValue / totalQty : 0
+
+  const otherCategories = allCategories.filter(c => c.id !== category.id)
+
+  async function handleMerge(targetId: string) {
+    if (!targetId) return
+    setMerging(true)
+    try {
+      await onMerge(category.id, targetId)
+    } finally {
+      setMerging(false)
+      setShowMerge(false)
+    }
+  }
+
+  const btnProps = {
+    variant: 'ghost' as const,
+    bg: isDark ? 'gray.600' : 'gray.100',
+    _hover: { bg: isDark ? 'gray.500' : 'gray.200' },
+    color: isDark ? 'gray.200' : 'gray.700',
+  }
 
   return (
     <Box bg={isDark ? 'gray.700' : 'white'} rounded="lg" shadow="sm" p={4} mb={4} overflowX="auto">
@@ -244,13 +280,40 @@ function CategoryBlock({ category, products }: { category: Category; products: P
           <Text fontSize="xs" color="gray.400">{collapsed ? '▶' : '▼'}</Text>
           <Heading size="sm">{category.name}</Heading>
           <Text fontSize="sm" color={isDark ? 'gray.400' : 'gray.400'}>
-            {formatPrice(totalValue)} · {products.length} Produkte
+            {formatPrice(totalValue)} · {products.length} Produkte · Ø {formatPrice(avgPrice)}/Stk.
           </Text>
         </HStack>
         {isAdmin() && (
-          <Button size="xs" variant="ghost" colorPalette="red" onClick={() => remove('category', category.id)}>
-            <FaTrashAlt />
-          </Button>
+          <HStack gap={1}>
+            {showMerge ? (
+              <>
+                <select
+                  style={{
+                    fontSize: '12px',
+                    padding: '2px 6px',
+                    borderRadius: '6px',
+                    border: `1px solid ${isDark ? '#4a5568' : '#e2e8f0'}`,
+                    background: isDark ? '#2d3748' : 'white',
+                    color: isDark ? '#a0aec0' : 'inherit',
+                  }}
+                  defaultValue=""
+                  onChange={e => handleMerge(e.target.value)}
+                  disabled={merging}
+                >
+                  <option value="" disabled>Zusammenführen mit…</option>
+                  {otherCategories.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+                <Button size="xs" variant="ghost" color="gray.400" onClick={() => setShowMerge(false)}>×</Button>
+              </>
+            ) : (
+              <Button size="xs" onClick={() => setShowMerge(true)} {...btnProps}>⇄ Merge</Button>
+            )}
+            <Button size="xs" variant="ghost" colorPalette="red" onClick={() => remove('category', category.id)}>
+              <FaTrashAlt />
+            </Button>
+          </HStack>
         )}
       </Flex>
 
@@ -289,9 +352,42 @@ function CategoryBlock({ category, products }: { category: Category; products: P
 // ─── Hauptseite ───────────────────────────────────────────────────────────────
 
 export default function InventarPage() {
-  const { data, loading } = useData()
+  const { data, loading, update, remove } = useData()
   const { isDark } = useTheme()
   const [showAddCategory, setShowAddCategory] = useState(false)
+
+  async function mergeCategories(sourceId: string, targetId: string) {
+    const sourceProducts = data.products.filter(p => p.categoryId === sourceId)
+    const targetProducts = data.products.filter(p => p.categoryId === targetId)
+
+    // Weighted average across all products in both categories
+    const allP = [...sourceProducts, ...targetProducts]
+    const totalQty = allP.reduce((s, p) => s + p.quantity, 0)
+    const totalValue = allP.reduce((s, p) => s + (p.buyPrice ?? 0) * p.quantity, 0)
+    const avgPrice = totalQty > 0 ? Math.round(totalValue / totalQty) : 0
+
+    // Update target products (merge duplicates or just update price)
+    for (const tgt of targetProducts) {
+      const srcDup = sourceProducts.find(p => p.name.toLowerCase() === tgt.name.toLowerCase())
+      await update<Product>('product', {
+        ...tgt,
+        quantity: tgt.quantity + (srcDup?.quantity ?? 0),
+        buyPrice: avgPrice,
+      })
+    }
+
+    // Handle source products
+    for (const src of sourceProducts) {
+      const isDuplicate = targetProducts.some(p => p.name.toLowerCase() === src.name.toLowerCase())
+      if (isDuplicate) {
+        await remove('product', src.id)
+      } else {
+        await update<Product>('product', { ...src, categoryId: targetId, buyPrice: avgPrice })
+      }
+    }
+
+    await remove('category', sourceId)
+  }
 
   if (loading) return <Spinner />
 
@@ -328,6 +424,9 @@ export default function InventarPage() {
           key={cat.id}
           category={cat}
           products={data.products.filter((p) => p.categoryId === cat.id)}
+          allCategories={data.categories}
+          allProducts={data.products}
+          onMerge={mergeCategories}
         />
       ))}
     </Box>
