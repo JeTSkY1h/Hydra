@@ -280,7 +280,7 @@ function CategoryBlock({
           <Text fontSize="xs" color="gray.400">{collapsed ? '▶' : '▼'}</Text>
           <Heading size="sm">{category.name}</Heading>
           <Text fontSize="sm" color={isDark ? 'gray.400' : 'gray.400'}>
-            {formatPrice(totalValue)} · {products.length} Produkte · Ø {formatPrice(avgPrice)}/Stk.
+            {formatPrice(totalValue)} · {products.length} Produkte · {totalQty} Stk. gesamt · Ø {formatPrice(avgPrice)}/Stk.
           </Text>
         </HStack>
         {isAdmin() && (
@@ -310,7 +310,10 @@ function CategoryBlock({
             ) : (
               <Button size="xs" onClick={() => setShowMerge(true)} {...btnProps}>⇄ Merge</Button>
             )}
-            <Button size="xs" variant="ghost" colorPalette="red" onClick={() => remove('category', category.id)}>
+            <Button size="xs" variant="ghost" colorPalette="red" onClick={async () => {
+              for (const p of products) await remove('product', p.id)
+              await remove('category', category.id)
+            }}>
               <FaTrashAlt />
             </Button>
           </HStack>
@@ -355,6 +358,19 @@ export default function InventarPage() {
   const { data, loading, update, remove } = useData()
   const { isDark } = useTheme()
   const [showAddCategory, setShowAddCategory] = useState(false)
+  const [clearingOrphans, setClearingOrphans] = useState(false)
+
+  const validCategoryIds = new Set(data.categories.map(c => c.id))
+  const orphanedProducts = data.products.filter(p => !validCategoryIds.has(p.categoryId))
+
+  async function clearOrphanedProducts() {
+    setClearingOrphans(true)
+    try {
+      for (const p of orphanedProducts) await remove('product', p.id)
+    } finally {
+      setClearingOrphans(false)
+    }
+  }
 
   async function mergeCategories(sourceId: string, targetId: string) {
     const sourceProducts = data.products.filter(p => p.categoryId === sourceId)
@@ -395,18 +411,31 @@ export default function InventarPage() {
     <Box>
       <Flex justify="space-between" align="center" mb={6}>
         <Heading>Inventar</Heading>
-        {isAdmin() && (
-          <Button
-            size="sm"
-            variant="ghost"
-            bg={isDark ? 'gray.600' : 'gray.100'}
-            _hover={{ bg: isDark ? 'gray.500' : 'gray.200' }}
-            color={isDark ? 'gray.200' : 'gray.700'}
-            onClick={() => setShowAddCategory((v) => !v)}
-          >
-            {showAddCategory ? 'Abbrechen' : '+ Kategorie'}
-          </Button>
-        )}
+        <HStack gap={2}>
+          {isAdmin() && orphanedProducts.length > 0 && (
+            <Button
+              size="sm"
+              variant="ghost"
+              colorPalette="red"
+              onClick={clearOrphanedProducts}
+              loading={clearingOrphans}
+            >
+              Verwaiste Produkte löschen ({orphanedProducts.length})
+            </Button>
+          )}
+          {isAdmin() && (
+            <Button
+              size="sm"
+              variant="ghost"
+              bg={isDark ? 'gray.600' : 'gray.100'}
+              _hover={{ bg: isDark ? 'gray.500' : 'gray.200' }}
+              color={isDark ? 'gray.200' : 'gray.700'}
+              onClick={() => setShowAddCategory((v) => !v)}
+            >
+              {showAddCategory ? 'Abbrechen' : '+ Kategorie'}
+            </Button>
+          )}
+        </HStack>
       </Flex>
 
       {showAddCategory && (

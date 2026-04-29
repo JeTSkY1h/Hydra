@@ -212,7 +212,10 @@ function TotalBlock() {
   const expenses = monthTransactions.filter((t) => t.type === 'EXPENSE').reduce((s, t) => s + t.amountCents, 0)
   const cash = (monthlyCash?.cashStartCents ?? 0) + income - expenses
 
-  const inventoryValue = data.products.reduce((s, p) => s + (p.buyPrice ?? 0) * p.quantity, 0)
+  const validCategoryIds = new Set(data.categories.map(c => c.id))
+  const inventoryValue = data.products
+    .filter(p => validCategoryIds.has(p.categoryId))
+    .reduce((s, p) => s + (p.buyPrice ?? 0) * p.quantity, 0)
   const assetValue = data.assets.reduce((s, a) => s + a.valueCents, 0)
   const openCredits = data.credits.reduce((sum, credit) => {
     const paid = data.transactions
