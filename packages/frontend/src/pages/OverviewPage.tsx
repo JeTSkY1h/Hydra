@@ -4,7 +4,7 @@ import {
 } from '@chakra-ui/react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  ReferenceLine, ResponsiveContainer,
+  ReferenceLine, ResponsiveContainer, Cell,
 } from 'recharts'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
@@ -34,6 +34,8 @@ function ProfitBar({ value, max, color }: { value: number; max: number; color: s
 }
 
 // ─── Kategorie-Ranking ────────────────────────────────────────────────────────
+
+const UNCATEGORIZED_ID = '__uncategorized__'
 
 function CategoryRanking({ transactions, period, month, year }: {
   transactions: Transaction[]
@@ -73,15 +75,39 @@ function CategoryRanking({ transactions, period, month, year }: {
       }
     }
 
-    return Object.entries(stats)
+    const entries = Object.entries(stats)
       .map(([id, s]) => ({ id, ...s, profit: s.revenue - s.cost }))
       .filter((s) => s.revenue > 0)
-      .sort((a, b) => b.profit - a.profit)
+
+    const uncatRevenue = filtered
+      .filter((t) => t.type === 'INCOME' && !t.productId)
+      .reduce((s, t) => s + t.amountCents, 0)
+
+    if (uncatRevenue > 0) {
+      entries.push({ id: UNCATEGORIZED_ID, name: 'Sonstige Einnahmen', revenue: uncatRevenue, cost: 0, profit: uncatRevenue })
+    }
+
+    return entries.sort((a, b) => b.profit - a.profit)
   }, [filtered, data.categories, data.products])
 
   const productStats = useMemo(() => {
     const catId = selectedCategoryId ?? categoryStats[0]?.id
     if (!catId) return []
+
+    if (catId === UNCATEGORIZED_ID) {
+      const grouped: Record<string, { revenue: number; cost: number; name: string; quantity: number }> = {}
+      for (const tx of filtered) {
+        if (tx.type !== 'INCOME' || tx.productId) continue
+        const key = tx.description || 'Ohne Beschreibung'
+        if (!grouped[key]) grouped[key] = { revenue: 0, cost: 0, name: key, quantity: 0 }
+        grouped[key].revenue += tx.amountCents
+        grouped[key].quantity += 1
+      }
+      return Object.entries(grouped)
+        .map(([id, s]) => ({ id, ...s, profit: s.revenue }))
+        .sort((a, b) => b.profit - a.profit)
+        .slice(0, 10)
+    }
 
     const stats: Record<string, { revenue: number; cost: number; name: string; quantity: number }> = {}
 
@@ -111,6 +137,7 @@ function CategoryRanking({ transactions, period, month, year }: {
   const activeCategoryId = selectedCategoryId ?? categoryStats[0]?.id
   const maxProfit = categoryStats[0]?.profit ?? 1
   const maxProductProfit = productStats[0]?.profit ?? 1
+  const isUncategorized = activeCategoryId === UNCATEGORIZED_ID
 
   if (categoryStats.length === 0) {
     return <Text color="gray.400" fontSize="sm">Noch keine verknüpften Einnahmen vorhanden.</Text>
@@ -154,10 +181,12 @@ function CategoryRanking({ transactions, period, month, year }: {
         </VStack>
       </Box>
 
-      {/* Top-Produkte der ausgewählten Kategorie */}
+      {/* Einzel-Einnahmen oder Top-Produkte der ausgewählten Kategorie */}
       <Box flex={1} bg={isDark ? 'gray.700' : 'white'} rounded="lg" shadow="sm" p={5}>
         <Heading size="sm" mb={1}>
-          Top Produkte — {data.categories.find((c) => c.id === activeCategoryId)?.name}
+          {isUncategorized
+            ? 'Einnahmen ohne Kategorie'
+            : `Top Produkte — ${data.categories.find((c) => c.id === activeCategoryId)?.name}`}
         </Heading>
         <Text fontSize="xs" color={isDark ? 'gray.500' : 'gray.400'} mb={4}>Klick auf eine Kategorie um sie zu wechseln</Text>
         {productStats.length === 0
@@ -170,15 +199,22 @@ function CategoryRanking({ transactions, period, month, year }: {
                     <HStack gap={2}>
                       {i === 0 && <Badge colorPalette="green" size="sm">★ Top</Badge>}
                       <Text fontSize="sm">{p.name}</Text>
-                      <Text fontSize="xs" color={isDark ? 'gray.500' : 'gray.400'}>{p.quantity}×</Text>
+                      {!isUncategorized && (
+                        <Text fontSize="xs" color={isDark ? 'gray.500' : 'gray.400'}>{p.quantity}×</Text>
+                      )}
+                      {isUncategorized && p.quantity > 1 && (
+                        <Text fontSize="xs" color={isDark ? 'gray.500' : 'gray.400'}>{p.quantity}×</Text>
+                      )}
                     </HStack>
                     <VStack align="end" gap={0}>
                       <Text fontSize="sm" fontWeight="bold" color={p.profit >= 0 ? isDark ? 'green.400' : 'green.600' : isDark ? 'red.400' : 'red.500'}>
                         {formatEur(p.profit)}
                       </Text>
-                      <Text fontSize="xs" color={isDark ? 'gray.500' : 'gray.400'}>
-                        {formatEur(p.revenue)} Einnahmen
-                      </Text>
+                      {!isUncategorized && (
+                        <Text fontSize="xs" color={isDark ? 'gray.500' : 'gray.400'}>
+                          {formatEur(p.revenue)} Einnahmen
+                        </Text>
+                      )}
                     </VStack>
                   </Flex>
                   <ProfitBar value={p.profit} max={maxProductProfit} color={i === 0 ? '#48BB78' : '#68D391'} />
@@ -269,12 +305,25 @@ function TotalBlock() {
 const MONTH_NAMES = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun',
   'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez']
 
-function MonthlyChart() {
+type ChartEntry = {
+  label: string
+  month: number
+  year: number
+  Einnahmen: number
+  Ausgaben: number
+  Nettogewinn: number
+  Mitgliedsbeiträge: number
+}
+
+function MonthlyChart({ onMonthSelect, selectedMonth }: {
+  onMonthSelect: (month: number, year: number) => void
+  selectedMonth: { month: number; year: number } | null
+}) {
   const { data } = useData()
   const { isDark } = useTheme()
   const memberCount = data.settings?.memberCount ?? 0
 
-  const chartData = useMemo(() => {
+  const chartData = useMemo<ChartEntry[]>(() => {
     const months: { year: number; month: number }[] = []
     const now = new Date()
     for (let i = 11; i >= 0; i--) {
@@ -300,6 +349,8 @@ function MonthlyChart() {
 
       return {
         label: `${MONTH_NAMES[month - 1]} ${year !== now.getFullYear() ? year : ''}`.trim(),
+        month,
+        year,
         Einnahmen: income / 100,
         Ausgaben: expenses / 100,
         Nettogewinn: net / 100,
@@ -319,14 +370,28 @@ function MonthlyChart() {
   const tickColor = isDark ? '#a0aec0' : '#4a5568'
   const gridColor = isDark ? '#4a5568' : '#e2e8f0'
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleBarClick = (entry: any) => {
+    onMonthSelect(entry.month as number, entry.year as number)
+  }
+
+  const isSelected = (entry: ChartEntry) =>
+    selectedMonth !== null &&
+    entry.month === selectedMonth.month &&
+    entry.year === selectedMonth.year
+
   return (
     <Box bg={isDark ? 'gray.700' : 'white'} rounded="lg" shadow="sm" p={5} mb={6}>
       <Heading size="sm" mb={1}>Monatsverlauf</Heading>
       <Text fontSize="xs" color={isDark ? 'gray.500' : 'gray.400'} mb={4}>
-        Mitgliedsbeiträge = {memberCount} × 50 € Break-even
+        Mitgliedsbeiträge = {memberCount} × 50 € Break-even · Klick auf einen Balken zum Filtern
       </Text>
       <ResponsiveContainer width="100%" height={280}>
-        <BarChart data={chartData} margin={{ top: 4, right: 8, left: 8, bottom: 0 }}>
+        <BarChart
+          data={chartData}
+          margin={{ top: 4, right: 8, left: 8, bottom: 0 }}
+          style={{ cursor: 'pointer' }}
+        >
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
           <XAxis dataKey="label" tick={{ fontSize: 12, fill: tickColor }} />
           <YAxis tickFormatter={(v) => `${v} €`} tick={{ fontSize: 11, fill: tickColor }} width={70} />
@@ -345,9 +410,21 @@ function MonthlyChart() {
             strokeDasharray="5 5"
             label={{ value: 'Break-even', position: 'insideTopRight', fontSize: 11, fill: '#ED8936' }}
           />
-          <Bar dataKey="Einnahmen" fill="#48BB78" radius={[3, 3, 0, 0]} />
-          <Bar dataKey="Ausgaben" fill="#FC8181" radius={[3, 3, 0, 0]} />
-          <Bar dataKey="Nettogewinn" fill="#4299E1" radius={[3, 3, 0, 0]} />
+          <Bar dataKey="Einnahmen" radius={[3, 3, 0, 0]} onClick={handleBarClick}>
+            {chartData.map((entry, i) => (
+              <Cell key={i} fill={isSelected(entry) ? '#276749' : '#48BB78'} opacity={selectedMonth && !isSelected(entry) ? 0.45 : 1} />
+            ))}
+          </Bar>
+          <Bar dataKey="Ausgaben" radius={[3, 3, 0, 0]} onClick={handleBarClick}>
+            {chartData.map((entry, i) => (
+              <Cell key={i} fill={isSelected(entry) ? '#c53030' : '#FC8181'} opacity={selectedMonth && !isSelected(entry) ? 0.45 : 1} />
+            ))}
+          </Bar>
+          <Bar dataKey="Nettogewinn" radius={[3, 3, 0, 0]} onClick={handleBarClick}>
+            {chartData.map((entry, i) => (
+              <Cell key={i} fill={isSelected(entry) ? '#2b6cb0' : '#4299E1'} opacity={selectedMonth && !isSelected(entry) ? 0.45 : 1} />
+            ))}
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
     </Box>
@@ -360,43 +437,44 @@ export default function OverviewPage() {
   const { data } = useData()
   const { isDark } = useTheme()
   const now = new Date()
-  const [period, setPeriod] = useState<Period>('month')
-  const [month] = useState(now.getMonth() + 1)
-  const [year] = useState(now.getFullYear())
+
+  const [selectedMonth, setSelectedMonth] = useState<{ month: number; year: number } | null>(null)
+
+  const period: Period = selectedMonth ? 'month' : 'all'
+  const month = selectedMonth?.month ?? now.getMonth() + 1
+  const year = selectedMonth?.year ?? now.getFullYear()
+
+  const handleMonthSelect = (m: number, y: number) => {
+    if (selectedMonth?.month === m && selectedMonth?.year === y) {
+      setSelectedMonth(null)
+    } else {
+      setSelectedMonth({ month: m, year: y })
+    }
+  }
 
   return (
     <Box>
       <Flex justify="space-between" align="center" mb={6}>
         <Box>
           <Heading>Übersicht</Heading>
-          {period === 'month' && (
-            <Text fontSize="sm" color={isDark ? 'gray.400' : 'gray.500'} mt={1}>
-              {MONTHS[month - 1]} {year}
-            </Text>
-          )}
+          <Text fontSize="sm" color={isDark ? 'gray.400' : 'gray.500'} mt={1}>
+            {selectedMonth ? `${MONTHS[month - 1]} ${year}` : 'Gesamt'}
+          </Text>
         </Box>
-        <HStack>
+        {selectedMonth && (
           <Button
-            color={isDark ? "white" : ""}
+            color={isDark ? 'white' : ''}
             size="sm"
-            variant={period === 'month' ? 'solid' : 'outline'}
-            onClick={() => setPeriod('month')}
+            variant="outline"
+            onClick={() => setSelectedMonth(null)}
           >
-            Dieser Monat
+            Gesamt anzeigen
           </Button>
-          <Button
-            color={isDark ? "white" : ""}
-            size="sm"
-            variant={period === 'all' ? 'solid' : 'outline'}
-            onClick={() => setPeriod('all')}
-          >
-            Gesamt
-          </Button>
-        </HStack>
+        )}
       </Flex>
 
       <TotalBlock />
-      <MonthlyChart />
+      <MonthlyChart onMonthSelect={handleMonthSelect} selectedMonth={selectedMonth} />
       <CategoryRanking
         transactions={data.transactions}
         period={period}
