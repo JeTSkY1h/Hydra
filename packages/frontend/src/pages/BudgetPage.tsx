@@ -29,6 +29,23 @@ function today() {
   return new Date().toISOString().slice(0, 10)
 }
 
+function updateProductQuantity(tx: Transaction) {
+  const { data, update } = useData()
+  if (tx.productId) {
+    const product = data.products.find((p) => p.id === tx.productId)
+    if (product) {
+      const newQtty = product.quantity + (tx.type === 'INCOME' ? tx.quantity ?? 1 : -(tx.quantity ?? 1))
+      update<Product>('product', { ...product, quantity: newQtty })
+    }
+  }
+}
+
+function deleteTransaction(tx: Transaction) {
+  const { remove } = useData()
+  remove('transaction', tx.id)
+  updateProductQuantity(tx)
+}
+
 // ─── Formular zum Hinzufügen einer Transaktion ────────────────────────────────
 
 function AddTransactionForm({
