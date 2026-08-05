@@ -28,7 +28,13 @@ usersRouter.delete('/:id', requireAuth, requireAdmin, async (c) => {
     return c.json({ error: 'User nicht gefunden' }, 404)
   }
 
-  await db.user.delete({ where: { id: targetId } })
+  // Invites die dieser User erstellt hat blockieren sonst das Löschen
+  // (Invite.createdById -> User.id ist ON DELETE RESTRICT)
+  await db.$transaction([
+    db.invite.deleteMany({ where: { createdById: targetId } }),
+    db.user.delete({ where: { id: targetId } }),
+  ])
+
   return c.json({ ok: true })
 })
 
