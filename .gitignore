@@ -3,3 +3,7 @@ dist
 .env
 .env.local
 .env.prod
+backups/
+
+# stray tsc output neben den .tsx-Quellen (siehe package.json build script)
+packages/frontend/src/**/*.js

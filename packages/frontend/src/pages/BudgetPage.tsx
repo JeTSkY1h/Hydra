@@ -343,30 +343,32 @@ export default function BudgetPage() {
       <Flex gap={6} flexDir={{ base: 'column', lg: 'row' }}>
 
         {/* Einnahmen */}
-        <Box flex={1} bg={isDark ? "gray.700" : "white"} rounded="lg" shadow="sm" p={4} overflowX="auto">
+        <Box flex={1} bg={isDark ? "gray.700" : "white"} rounded="lg" shadow="sm" p={4}>
           <Heading size="sm" color={isDark ? "green.400" : "green.600"} mb={3}>
             Einnahmen — {formatEur(income.reduce((s, t) => s + t.amountCents, 0))}
           </Heading>
-          <Table.Root 
-            size="sm"
-            color={isDark ? "gray.400" : "gray.600"}
-            css={{ '--chakra-colors-bg': 'transparent' }}
-          >
-            <Table.Header>
-              <Table.Row>
-                <Table.ColumnHeader>Datum</Table.ColumnHeader>
-                <Table.ColumnHeader>Produkt</Table.ColumnHeader>
-                <Table.ColumnHeader>Anz.</Table.ColumnHeader>
-                <Table.ColumnHeader>Preis</Table.ColumnHeader>
-                <Table.ColumnHeader />
-              </Table.Row>
-            </Table.Header>
-            <Table.Body>
-              {income.map((tx) => (
-                <TransactionRow key={tx.id} tx={tx} products={data.products} />
-              ))}
-            </Table.Body>
-          </Table.Root>
+          <Box overflowX="auto">
+            <Table.Root
+              size="sm"
+              color={isDark ? "gray.400" : "gray.600"}
+              css={{ '--chakra-colors-bg': 'transparent' }}
+            >
+              <Table.Header>
+                <Table.Row>
+                  <Table.ColumnHeader>Datum</Table.ColumnHeader>
+                  <Table.ColumnHeader>Produkt</Table.ColumnHeader>
+                  <Table.ColumnHeader>Anz.</Table.ColumnHeader>
+                  <Table.ColumnHeader>Preis</Table.ColumnHeader>
+                  <Table.ColumnHeader />
+                </Table.Row>
+              </Table.Header>
+              <Table.Body>
+                {income.map((tx) => (
+                  <TransactionRow key={tx.id} tx={tx} products={data.products} />
+                ))}
+              </Table.Body>
+            </Table.Root>
+          </Box>
           {isAdmin() && (
             <AddTransactionForm
               type="INCOME"
@@ -379,29 +381,31 @@ export default function BudgetPage() {
         </Box>
 
         {/* Ausgaben */}
-        <Box flex={1} bg={isDark ? "gray.700" : "white"} rounded="lg" shadow="sm" p={4} overflowX="auto">
+        <Box flex={1} bg={isDark ? "gray.700" : "white"} rounded="lg" shadow="sm" p={4}>
           <Heading size="sm" color={isDark ? "red.400" : "red.600"} mb={3}>
             Ausgaben — {formatEur(expenses.reduce((s, t) => s + t.amountCents, 0))}
           </Heading>
-           <Table.Root 
-            size="sm"
-            color={isDark ? "gray.400" : "gray.600"}
-            css={{ '--chakra-colors-bg': 'transparent' }}
-          >
-            <Table.Header>
-              <Table.Row>
-                <Table.ColumnHeader>Datum</Table.ColumnHeader>
-                <Table.ColumnHeader>Produkt</Table.ColumnHeader>
-                <Table.ColumnHeader>Preis</Table.ColumnHeader>
-                <Table.ColumnHeader />
-              </Table.Row>
-            </Table.Header>
-            <Table.Body>
-              {expenses.map((tx) => (
-                <TransactionRow key={tx.id} tx={tx} products={data.products} />
-              ))}
-            </Table.Body>
-          </Table.Root>
+          <Box overflowX="auto">
+            <Table.Root
+              size="sm"
+              color={isDark ? "gray.400" : "gray.600"}
+              css={{ '--chakra-colors-bg': 'transparent' }}
+            >
+              <Table.Header>
+                <Table.Row>
+                  <Table.ColumnHeader>Datum</Table.ColumnHeader>
+                  <Table.ColumnHeader>Produkt</Table.ColumnHeader>
+                  <Table.ColumnHeader>Preis</Table.ColumnHeader>
+                  <Table.ColumnHeader />
+                </Table.Row>
+              </Table.Header>
+              <Table.Body>
+                {expenses.map((tx) => (
+                  <TransactionRow key={tx.id} tx={tx} products={data.products} />
+                ))}
+              </Table.Body>
+            </Table.Root>
+          </Box>
           {isAdmin() && (
           <AddTransactionForm
             type="EXPENSE"

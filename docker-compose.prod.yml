@@ -24,5 +24,24 @@ services:
       postgres:
         condition: service_healthy
 
+  # Nächtlicher pg_dump, lokal auf dem VPS abgelegt.
+  # Von hier per deploy/pull-backups.sh auf einen anderen Rechner ziehen.
+  backup:
+    image: prodrigestivill/postgres-backup-local:17-alpine
+    restart: unless-stopped
+    env_file: .env.prod
+    environment:
+      POSTGRES_HOST: postgres
+      SCHEDULE: "@daily"
+      BACKUP_KEEP_DAYS: 35
+      BACKUP_KEEP_WEEKS: 0
+      BACKUP_KEEP_MONTHS: 0
+      HEALTHCHECK_PORT: 8080
+    volumes:
+      - ./backups:/backups
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   postgres_data:
